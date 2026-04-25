@@ -50,5 +50,48 @@ export const DESIGN_POINTS: InterviewPoint[] = [
     answer: '1. 冗余部署：多实例、多机房、多活。2. 故障转移：自动切换。3. 限流熔断：防止雪崩。4. 灰度发布：逐步放量。5. 容灾演练。目标：99.99% 可用性（年停机不超 1 小时）。',
     analogy: '高可用作【飞机双引擎】：一个坏了另一个还能工作；限流熔断像【保险丝】，电流过大自动跳闸；灰度发布像【试运营】，先让一部分人用。',
     importance: 'high'
+  },
+  {
+   id: 'design-8',
+   question: '如何设计一个高并发下单系统？',
+    answer: '【核心挑战】\n- 库存扣减的原子性\n- 订单创建的幂等性\n- 支付状态的同步\n- 高并发下的性能\n\n【解决方案】\n\n1. 分布式事务（TCC模式）\n   - Try阶段：冻结库存，创建订单\n   - Confirm阶段：确认扣减库存\n   - Cancel阶段：释放冻结库存\n   ```java\n   // 幂等性保证\n   public Order createOrder(String bizId, OrderRequest request) {\n       if (orderMapper.existsByBizId(bizId)) {\n           return orderMapper.findByBizId(bizId);\n       }\n       // 创建订单逻辑\n   }\n   ```\n\n2. 性能优化\n   - 读写分离：订单查询走从库\n   - 缓存：商品信息、用户信息缓存到Redis\n   - 异步处理：短信、邮件等异步发送\n   - 分库分表：按用户ID或订单ID分片\n\n3. 库存管理\n   - Redis预扣库存：使用Lua脚本保证原子性\n   - 数据库最终扣减：异步更新\n   - 库存分段：减少热点数据竞争',
+    analogy: '高并发下单就像演唱会抢票：先冻结座位（Try），确认支付后真正占用（Confirm），超时或取消释放座位（Cancel）。',
+    importance: 'high'
+  },
+  {
+   id: 'design-9',
+   question: '如何设计一个实时排行榜系统？',
+    answer: '【核心需求】\n- 实时更新用户分数\n- 快速获取排行榜\n- 支持分页查询\n- 高并发访问\n\n【技术方案】\n\n1. 数据结构选择\n   - Redis ZSet（有序集合）：天然支持排序\n   - score：用户分数\n   - member：用户ID\n\n2. 核心操作\n   ```java\n   // 更新分数\n   redisTemplate.opsForZSet().add("ranking:score", userId, score);\n   \n   // 获取排行榜（倒序）\n   Set<TypedTuple<Object>> tuples = redisTemplate.opsForZSet()\n       .reverseRangeWithScores("ranking:score", 0, topN - 1);\n   \n   // 获取用户排名\n   Long rank = redisTemplate.opsForZSet().reverseRank("ranking:score", userId);\n   ```\n\n3. 性能优化\n   - 内存存储：Redis内存操作，性能极高\n   - 原子操作：ZSet操作是原子的\n   - 持久化：RDB+AOF保证数据不丢失\n   - 集群：Redis Cluster支持横向扩展\n\n4. 扩展功能\n   - 分区排行榜：按时间、地区、类别分区\n   - 历史排行榜：定时快照保存历史数据\n   - 增量更新：只更新变化的分数',
+    analogy: '实时排行榜就像体育比赛的记分板，Redis ZSet就是那个会自动排序的电子屏，谁得分高谁就排前面。',
+    importance: 'medium'
+  },
+  {
+   id: 'design-10',
+   question: '如何设计一个分布式ID生成器？',
+    answer: '【需求场景】\n- 分库分表需要全局唯一ID\n- 订单号、用户ID等业务标识\n- 趋势递增、信息安全\n\n【解决方案】\n\n1. UUID\n   - 优点：本地生成、性能高\n   - 缺点：无序、太长、不适合做数据库主键\n\n2. 数据库自增\n   - 优点：简单、递增\n   - 缺点：单点故障、性能瓶颈\n   - 优化：双主键交替自增（1,3,5...和2,4,6...）\n\n3. Redis INCR\n   - 优点：性能高、递增\n   - 缺点：需要维护Redis、重启后可能重复\n\n4. 雪花算法（Snowflake）\n   ```\n   64位 = 1位符号 + 41位时间戳 + 10位机器ID + 12位序列号\n   ```\n   - 优点：趋势递增、高性能、分布式\n   - 缺点：时钟回拨问题、机器ID需要配置\n\n5. Leaf（美团）\n   - 号段模式：批量获取ID段\n   - 雪花算法：解决时钟回拨\n\n【推荐方案】\n- 一般场景：雪花算法\n- 超高并发：Leaf\n- 简单应用：Redis INCR',
+    analogy: '分布式ID生成器就像全国身份证号：省市区（机器ID）+出生日期（时间戳）+顺序号（序列号），保证全国唯一。',
+    importance: 'high'
+  }
+,
+  {
+   id: 'design-11',
+   question: '如何保证缓存和数据库一致性？',
+    answer: '系统设计面试里这题最常见的主线是 Cache Aside。\n\n常见做法：\n- 读：先查缓存，没命中再查数据库并回填缓存\n- 写：先更新数据库，再删除缓存\n\n为什么不是“先更数据库再更缓存”：\n- 因为缓存更新逻辑更复杂\n- 并发场景下更容易写乱\n\n还要补充的问题：\n- 删缓存失败怎么办\n- 并发读导致旧值回填怎么办\n- 主从延迟导致读到旧值怎么办\n\n常见增强方案：\n- 延迟双删\n- MQ 异步重删\n- binlog 订阅做订正\n- 热点数据主动刷新\n\n答题关键：\n- 大部分业务追求的是最终一致，不是绝对实时强一致。',
+    analogy: '缓存和数据库像公告栏和正式档案，档案改完后先把公告撕掉，等下一个人来时再按新档案重贴。',
+    importance: 'high'
+  },
+  {
+   id: 'design-12',
+   question: '什么是令牌桶限流？适合什么场景？',
+    answer: '令牌桶的核心思想是：系统按固定速率往桶里放令牌，请求来了先拿令牌，拿到才能继续执行，拿不到就限流或排队。\n\n特点：\n- 能限制平均速率\n- 允许一定程度的突发流量\n- 比简单计数器更平滑\n\n适用场景：\n- API 网关限流\n- 秒杀活动入口保护\n- 用户级接口频控\n- 第三方调用配额控制\n\n面试里可以顺带区分：\n- 令牌桶允许突发\n- 漏桶更强调匀速流出。',
+    analogy: '令牌桶像地铁闸机定时放行票券，乘客来了先拿票，拿到票再进站，没有票就得等。',
+    importance: 'high'
+  },
+  {
+   id: 'design-13',
+   question: '高并发下库存扣减一致性一般怎么做？',
+    answer: '库存扣减最核心的问题是不能超卖。\n\n常见方案：\n1. 数据库条件更新\n- \`update ... set stock = stock - 1 where stock > 0\`\n- 简单直接，但高并发下压力容易集中到数据库\n\n2. Redis 预扣库存 + 异步落库\n- 先在 Redis 用 Lua 脚本原子扣减\n- 成功后再发 MQ 异步创建订单或落库\n- 更适合秒杀类高并发场景\n\n3. 冻结库存 / 预占库存\n- 下单先占库存\n- 支付成功再正式扣减\n- 超时未支付再释放\n\n4. 幂等和补偿\n- 订单重复提交要去重\n- 异常场景要有回滚或补偿机制\n\n答题重点：\n- 先讲“防超卖”\n- 再讲“高并发下不要全打数据库”\n- 最后补“支付成功、超时释放、补偿对账”。',
+    analogy: '库存扣减像演唱会座位锁座，先把座位占住，再支付确认，超时没付款就放回去。',
+    importance: 'high'
   }
 ];

@@ -6,3 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+deploy-dist*.zip
+cloud_home.html
+hot100_page.html
+hot100-current.tsv
+hot100-official.json
+tmp-click-*.png
+skills/

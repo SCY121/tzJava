@@ -135,4 +135,26 @@ export const REDIS_POINTS: InterviewPoint[] = [
     analogy: 'Redis 像【瑞士军刀】，功能全面；Memcached 像【水果刀】，专注切东西（缓存）这一件事，简单高效。',
     importance: 'medium'
   }
+,
+  {
+   id: 'redis-20',
+   question: 'Redis 和数据库如何保持一致性？',
+   answer: '这题面试里最常见的回答是 Cache Aside 模式。\n\n常见流程：\n- 读：先查缓存，缓存没有再查数据库并回填缓存\n- 写：先更新数据库，再删除缓存\n\n为什么通常是“更新数据库 + 删除缓存”：\n- 因为直接更新缓存更容易把复杂逻辑写乱\n- 删除缓存让下次读请求自然回源重建\n\n常见问题：\n1. 删除缓存后并发读导致旧值回填\n2. 数据库成功了但删缓存失败\n3. 主从延迟导致读到旧值\n\n常见优化：\n- 延迟双删\n- MQ 异步重删\n- 热点数据短 TTL + 主动刷新\n- 对关键场景引入订阅 binlog 做缓存订正\n\n面试落点：\n- 不要说“绝对强一致”，大多数缓存系统追求的是高概率一致和最终一致。',
+   analogy: '缓存和数据库一致性像公告栏和正式档案，正式档案先改，公告栏旧了就撕掉，让下一个人重新按档案贴新公告。',
+   importance: 'high'
+  },
+  {
+   id: 'redis-21',
+   question: 'Redis 的 ZSet 和 Hash 分别适合什么场景？',
+   answer: 'Hash 适合存一个对象的多个字段，例如用户资料、商品属性、购物车条目。\n\n优点：\n- 字段级读写方便\n- 比直接存整段 JSON 更利于局部更新\n\nZSet 适合“既要去重，又要按分数排序”的场景，例如：\n- 排行榜\n- 延时任务\n- 热搜权重排序\n- 最近活跃用户列表\n\n面试回答时可以总结为：\n- Hash 解决“对象字段组织”\n- ZSet 解决“排序 + 范围查询”',
+   analogy: 'Hash 像一张用户信息卡，ZSet 像会自动排好名次的排行榜。',
+   importance: 'medium'
+  },
+  {
+   id: 'redis-22',
+   question: 'Redisson 的 RLock、看门狗、RRateLimiter 分别解决什么问题？',
+   answer: 'Redisson 是基于 Redis 做的一套高级分布式工具封装。\n\n1. RLock\n- 对 Redis 分布式锁做了对象化封装\n- 支持可重入、自动续期、阻塞等待等能力\n\n2. 看门狗（Watch Dog）\n- 解决“业务没执行完，锁先过期”的问题\n- Redisson 默认会在锁未主动释放时自动续期\n- 这样长任务执行过程中锁不会轻易失效\n\n3. RRateLimiter\n- 用来做分布式限流\n- 适合接口防刷、活动限流、用户级配额控制\n\n面试里可以再补一句：\n- 用原生 Redis 也能自己拼这些能力\n- 但 Redisson 把常见边界问题已经封装好了，工程里更省心。',
+   analogy: 'RLock 像智能门锁，看门狗像自动续电系统，RRateLimiter 像门口的闸机限流器。',
+   importance: 'high'
+  }
 ];

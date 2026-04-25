@@ -6,6 +6,8 @@ export interface AlgorithmPoint {
   approach: string;
   code: string;
   url?: string;
+  group?: string;
+  slug?: string;
 }
 
 export const ALGORITHM_POINTS: AlgorithmPoint[] = [

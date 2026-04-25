@@ -24,4 +24,14 @@ export interface AlgorithmPoint {
   approach: string;
   code: string;
   url?: string;
+  group?: string;
+  slug?: string;
+}
+
+export interface AlgorithmTemplate {
+  id: string;
+  title: string;
+  summary: string;
+  usage: string;
+  code: string;
 }

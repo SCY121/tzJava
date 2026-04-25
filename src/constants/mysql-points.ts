@@ -171,4 +171,19 @@ export const MYSQL_POINTS: InterviewPoint[] = [
     analogy: '范式像把仓库物品按规则分门别类；反范式像把常用工具提前放到手边，牺牲一点整洁换取效率。',
     importance: 'medium'
   }
+,
+  {
+   id: 'mysql-25',
+   question: '深分页为什么慢？怎么优化？',
+   answer: '深分页慢的根本原因是：\`LIMIT offset, size\` 在 offset 很大时，数据库往往要先扫描并丢弃前面大量记录，最后才返回真正需要的那一小段数据。\n\n为什么慢：\n- 扫描行数大\n- 可能回表很多次\n- 排序成本高时更明显\n\n常见优化：\n1. 基于主键或唯一索引做“游标翻页”\n- 例如 \`where id > lastId limit 20\`\n- 适合连续翻页场景\n\n2. 先查 id 再回表\n- 先用覆盖索引拿到目标 id 集合\n- 再按 id 回表查详情\n\n3. 限制深翻页能力\n- 例如后台管理系统只允许翻到一定页数\n\n4. 对排序字段建立合适索引\n- 尽量避免 filesort 和大范围回表。',
+   analogy: '深分页像在档案室里翻第 10000 页，你得先把前面 9999 页都翻过去，真正慢的不是拿结果，而是前面这些无效动作。',
+   importance: 'high'
+  },
+  {
+   id: 'mysql-26',
+   question: '为什么数据库里需要 redo log、binlog 这类日志体系？',
+   answer: '不同日志解决的是不同层面的问题，核心是把“事务提交、崩溃恢复、主从复制、审计恢复”这些需求拆开处理。\n\n为什么需要 redo log：\n- InnoDB 基于 WAL 思想，先写日志再落数据页\n- 保证事务提交后的持久性\n- 宕机后可以把已经提交但还没刷盘的数据补回来\n\n为什么需要 undo log：\n- 事务回滚时要撤销修改\n- MVCC 读历史版本时也依赖它\n\n为什么需要 binlog：\n- 记录逻辑层面的变更\n- 主要用于主从复制和数据恢复\n- 是 MySQL Server 层的日志，不只 InnoDB 用\n\n面试回答重点：\n- redo log 解决“提交后别丢”\n- undo log 解决“出错能回滚”\n- binlog 解决“复制和重放”\n- 它们不是重复设计，而是职责不同。',
+   analogy: 'redo log 像现场施工记录，undo log 像撤销单，binlog 像对外发布的正式变更公告。',
+   importance: 'high'
+  }
 ];

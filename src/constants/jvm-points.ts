@@ -199,4 +199,12 @@ export const JVM_POINTS: InterviewPoint[] = [
     analogy: '对象回收像查一个人是否还能联系到公司主线，只要从总机一路找不到他，说明这个人已经脱离系统，可以清理。',
     importance: 'high'
   }
+,
+  {
+   id: 'jvm-full-gc-troubleshoot',
+   question: '线上 Full GC 频繁时一般怎么排查？',
+   answer: '面试里这题重点不是背命令，而是排查顺序。\n\n常见步骤：\n1. 先确认现象\n- GC 日志里 Full GC 是否真的频繁\n- 每次停顿多久\n- 回收后堆占用是否仍然居高不下\n\n2. 再看方向\n- 老年代是不是被大对象、长生命周期对象顶满\n- 元空间是不是持续增长\n- 是否有缓存、集合、ThreadLocal 没释放\n- 是否短时间创建了大量对象导致晋升过快\n\n3. 常用工具\n- \`jstat -gc\` 看各代使用情况\n- \`jmap -histo\` 看对象分布\n- dump 堆后用 MAT / JProfiler / YourKit 分析引用链\n- \`jstack\` 配合看是否有线程堆积导致对象无法释放\n\n4. 常见根因\n- 内存泄漏\n- 缓存无限增长\n- 不合理的 JVM 参数\n- 大批量查询 / 大对象加载\n- 动态生成类过多导致元空间膨胀\n\n5. 处理思路\n- 先找对象为什么活着\n- 再决定改代码、改参数还是改业务流程。',
+   analogy: 'Full GC 排查像排查仓库为什么总是爆仓，关键不是只看“满了”，而是找出到底是哪类货一直搬不出去。',
+   importance: 'high'
+  }
 ];

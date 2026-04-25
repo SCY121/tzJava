@@ -226,4 +226,26 @@ export const JUC_POINTS: InterviewPoint[] = [
    analogy: '就像【餐厅经理巡店】：看有几个服务员在岗（getPoolSize）、几个在忙（getActiveCount）、门口等位的有几人（queue.size）。',
    importance: 'low'
   }
+,
+  {
+   id: 'juc-thread-communication',
+   question: '多线程之间常见的通信方式有哪些？',
+   answer: '常见方式有：1. \`wait/notify/notifyAll\`；2. \`Condition\`；3. \`volatile\` 共享标志位；4. 阻塞队列；5. \`CountDownLatch\`、\`CyclicBarrier\`、\`Semaphore\` 等并发工具类；6. \`Future\` / \`CompletableFuture\` 做异步结果编排。面试里最好按“共享内存通信”和“同步器通信”两类来讲，前者偏底层，后者偏工程实践。',
+   analogy: '线程通信像团队协作：有的是喊话通知，有的是通过白板同步状态，有的是通过队列传任务。',
+   importance: 'high'
+  },
+  {
+   id: 'juc-completablefuture-vs-threadpool',
+   question: 'CompletableFuture 和手动往线程池 submit 任务有什么区别？',
+   answer: '二者底层都可能依赖线程池，但抽象层次不同。\n\n手动 \`submit\` 的特点：\n- 更底层\n- 适合提交单个任务\n- 结果组合、异常传播、链式编排都要自己写\n\nCompletableFuture 的特点：\n- 更偏异步编排\n- 支持 thenApply、thenCombine、allOf、exceptionally 等链式操作\n- 更适合多个异步步骤之间的依赖和组合\n\n面试回答建议：\n- 只有“丢任务执行”时，线程池 submit 就够了\n- 有“任务依赖、结果组合、统一异常处理”时，CompletableFuture 更合适\n- 真正在生产里仍要明确指定业务线程池，避免默认线程池不可控。',
+   analogy: 'submit 像把单个工单交给员工；CompletableFuture 像把整条审批流、依赖关系和异常兜底都编排好了。',
+   importance: 'high'
+  },
+  {
+   id: 'juc-virtual-thread',
+   question: '什么是虚拟线程？它适合什么场景？',
+   answer: '虚拟线程是 JDK 21 正式引入的重要能力，本质上是由 JVM 调度的轻量级线程，不再像传统平台线程那样一对一绑定操作系统线程。\n\n它适合：\n- 高并发 IO 场景\n- 大量短连接、阻塞式编程模型\n- 希望保留“一个请求一个线程”直觉写法的服务\n\n它不意味着：\n- 所有场景都比线程池更快\n- CPU 密集型任务会自动收益巨大\n\n面试回答重点：\n- 虚拟线程降低的是线程创建和切换成本\n- 更适合高并发阻塞 IO，不是专门解决 CPU 计算性能问题。',
+   analogy: '虚拟线程像把大量轻量工单挂到少量正式工身上调度，写法还是“一人一单”，但底层不再真的一单配一个系统线程。',
+   importance: 'medium'
+  }
 ];

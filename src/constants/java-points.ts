@@ -332,7 +332,7 @@ export const JAVA_POINTS: InterviewPoint[] = [
 【equals() 的含义】
 
 - 默认继承 Object.equals，本质也是比较地址
-- 很多类会重写 equals，用于比较“内容是否相等”
+- 很多类会重写 equals，用于比较”内容是否相等”
 - 例如 String 重写了 equals 比较字符内容
 
 【hashCode() 和 equals() 的关系】
@@ -347,5 +347,323 @@ export const JAVA_POINTS: InterviewPoint[] = [
 - 只重写 equals 不重写 hashCode 会导致集合行为异常`,
     analogy: 'hashCode 像先按楼栋分区，equals 像到了楼层后再核对是不是同一个住户。',
     importance: 'high'
+  },
+  {
+    id: 'java-11',
+    question: 'volatile关键字的作用和原理是什么？',
+    answer: `【volatile的作用】
+
+1. 保证可见性
+   - 一个线程修改volatile变量后，其他线程能立即看到最新值
+   - 强制从主内存读写，不缓存到工作内存
+
+2. 禁止指令重排序
+   - 防止编译器和处理器对指令进行重排序优化
+   - 保证代码执行顺序的一致性
+
+3. 不保证原子性
+   - 不能替代synchronized进行复合操作
+   - i++操作仍然需要同步
+
+【底层原理】
+
+1. 内存屏障（Memory Barrier）
+   - 写操作：插入StoreStore + StoreLoad屏障
+   - 读操作：插入LoadLoad + LoadStore屏障
+   - 阻止屏障前后的指令重排序
+
+2. Lock前缀指令
+   - 处理器执行带Lock的指令时，会锁定缓存行
+   - 强制刷新到主内存，并使其他处理器的缓存失效
+
+【使用场景】
+
+1. 状态标志\n   - private volatile boolean shutdown = false\n   - public void stop() { shutdown = true; }\n\n2. 双重检查锁定（DCL）\n   - private volatile static Singleton instance\n\n3. 读写分离\n   - 写少读多的场景\n   - 确保读取到最新值\n\n【注意事项】\n- 不能用于计数器等需要原子操作的场景\n- 性能开销比synchronized小，但功能有限`,
+    analogy: 'volatile就像公告栏上的通知，写的人必须贴上去（写主存），看的人必须去看公告栏（读主存），不能只看自己抄的副本（工作内存）。',
+    importance: 'high'
+  },
+  {
+    id: 'java-12',
+    question: '抽象类和接口的区别？什么时候使用抽象类，什么时候使用接口？',
+    answer: `【抽象类 vs 接口】
+
+【抽象类特点】
+1. 可以有抽象方法和具体方法
+2. 可以有成员变量（各种访问权限）
+3. 可以有构造方法
+4. 类只能继承一个抽象类（单继承）
+5. 用于”is-a”关系（是一个）
+
+【接口特点】
+1. Java 8前只能有抽象方法
+2. Java 8后可以有默认方法、静态方法
+3. Java 9后可以有私有方法
+4. 只能有常量（public static final）
+5. 类可以实现多个接口（多实现）
+6. 用于”has-a”关系（具有某种能力）
+
+【如何选择】
+
+使用抽象类当：
+1. 需要在基类中定义具体实现
+2. 需要定义非static或非final的成员变量
+3. 需要定义构造方法
+4. 子类之间有紧密的”is-a”关系
+
+使用接口当：
+1. 只定义行为规范，不提供实现
+2. 需要多重继承
+3. 不同类的对象具有相同行为
+4. 定义契约，让不同实现类遵循
+
+【Java 8+ 接口增强】\n- 抽象方法：void doSomething()\n- 默认方法：default void doDefault() { System.out.println(“Default implementation”); }\n- 静态方法：static void doStatic() { System.out.println(“Static method”); }\n\n【设计原则】\n- 接口定义能力，抽象类提供部分实现\n- 优先使用接口（更灵活）\n- 抽象类适合模板方法模式`,
+    analogy: '抽象类像【父亲】，孩子只能有一个亲生父亲，但父亲可以给一些遗传特征（具体方法）；接口像【技能证书】，一个人可以有多个证书（多实现），每个证书定义了你会做什么（抽象方法）。',
+    importance: 'high'
+  },
+  {
+    id: 'java-13',
+    question: 'try-catch-finally的执行顺序？return语句在finally之前还是之后执行？',
+    answer: `【执行顺序】
+
+1. try中无异常：
+   try → finally
+
+2. try中有异常，catch能处理：
+   try → catch → finally
+
+3. try中有异常，catch不能处理：
+   try → finally → 抛出异常
+
+4. try和catch中都有return：
+   finally总是最后执行
+
+【return执行机制】\n\n1. finally中的return会覆盖try/catch中的return\n   - public int test() { try { return 1; } finally { return 2; } } // 最终返回2\n\n2. finally中修改基本类型变量不影响返回值\n   - int x = 1; try { return x; } finally { x = 2; } // 不影响返回值，仍然返回1\n\n3. finally中修改引用类型变量会影响返回值\n   - StringBuilder sb = new StringBuilder(“hello”); try { return sb; } finally { sb.append(“ world”); } // 返回”hello world”
+
+【最佳实践】
+1. 不要在finally中使用return
+2. finally主要用于资源清理
+3. 使用try-with-resources管理资源
+
+【异常处理原则】
+1. 具体异常优先于通用异常
+2. 不要吞异常，至少记录日志
+3. 异常信息要包含上下文`,
+    analogy: 'try-catch-finally就像做饭：try是正常炒菜，catch是处理糊锅，finally是关火关气。即使菜炒好了（return），最后也必须关火关气。但如果在关火时又往锅里加了调料（finally中修改引用），菜的味道就变了。',
+    importance: 'medium'
+  }
+,
+  {
+    id: 'java-14',
+    question: '什么是序列化和反序列化？常见方案怎么选？',
+    answer: `序列化是把对象状态转换成可传输、可存储的字节序列；反序列化是把字节序列再恢复成对象。
+
+常见场景：
+- 对象落盘
+- 网络传输
+- RPC 调用
+- 缓存对象
+
+JDK 原生序列化特点：
+- 直接实现 \`Serializable\`
+- 使用简单
+- 可读性差、体积大、性能一般
+- 强依赖类结构，跨语言能力差
+
+常见替代方案：
+- JSON：可读性好，适合接口传输，但体积通常更大
+- Protobuf：体积小、性能好、跨语言能力强，适合 RPC 和服务间通信
+- Hessian / Kryo：常见于高性能内部通信场景
+
+面试回答可以这样落：
+1. 先说明“对象 -> 字节流 -> 对象”的本质
+2. 再说原生序列化的优缺点
+3. 最后补充真实项目里更常用 JSON 或 Protobuf 这类方案`,
+    analogy: '序列化像把家具拆成标准包装箱方便运输，反序列化像到目的地后再重新组装。',
+    importance: 'medium'
+  },
+  {
+    id: 'java-15',
+    question: 'Java 8 最重要的新特性有哪些？',
+    answer: `Java 8 面试里最常问的不是把特性背全，而是能不能讲清它们解决了什么问题。
+
+高频特性：
+1. Lambda 表达式
+- 让函数式写法更简洁
+- 常用于集合遍历、排序、回调
+
+2. Stream API
+- 支持声明式数据处理
+- 常见操作有 \`filter\`、\`map\`、\`sorted\`、\`collect\`
+- 优点是代码更聚焦“做什么”，不是“怎么循环”
+
+3. 函数式接口
+- 典型有 \`Function\`、\`Consumer\`、\`Supplier\`、\`Predicate\`
+- 是 Lambda 的基础
+
+4. Optional
+- 用于显式表达“值可能为空”
+- 减少空指针的低级判断
+
+5. 新时间 API
+- \`LocalDate\`、\`LocalDateTime\`、\`Instant\`
+- 解决旧 \`Date\` / \`Calendar\` 可读性差、线程不安全的问题
+
+6. 接口默认方法
+- 接口可以提供默认实现，便于框架扩展
+
+7. CompletableFuture
+- 支持更流畅的异步编排
+
+注意点：
+- Stream 不适合所有场景，复杂链式调用过长会降低可读性
+- Optional 主要用于返回值语义，不建议滥用到字段和参数`,
+    analogy: 'Java 8 像把手写流水账升级成带公式的电子表格，很多样板代码都被抽掉了。',
+    importance: 'high'
+  },
+  {
+    id: 'java-16',
+    question: '单例模式有哪些写法？哪种更推荐？',
+    answer: `常见写法有：
+
+1. 饿汉式
+- 类加载时就创建实例
+- 简单直接，线程安全
+- 缺点是可能提前占用资源
+
+2. 懒汉式
+- 第一次使用时再创建
+- 需要处理线程安全问题
+
+3. 双重检查锁（DCL）
+- 先判空，再加锁，再判空
+- 通常要配合 \`volatile\`
+- 兼顾延迟加载和并发性能
+
+4. 静态内部类
+- 利用类加载机制保证线程安全
+- 延迟加载、实现简洁
+- 是面试中很推荐的一种写法
+
+5. 枚举单例
+- 最简洁，也能防反射和反序列化破坏
+- 在工程里很稳
+
+推荐回答：
+- 如果是面试手写，静态内部类和 DCL 最常见
+- 如果强调防反射、防反序列化，枚举单例更稳`,
+    analogy: '单例像公司里唯一的一把总钥匙，关键是既要保证只有一把，还要保证并发取用时不会复制出第二把。',
+    importance: 'high'
+  },
+  {
+    id: 'java-17',
+    question: '工厂模式和抽象工厂模式有什么区别？',
+    answer: `工厂模式的核心是“把对象创建逻辑从业务代码里拿出去”。
+
+简单工厂：
+- 一个工厂类根据参数创建不同对象
+- 优点是调用方简单
+- 缺点是工厂职责容易越来越重
+
+工厂方法：
+- 每种产品对应一个工厂
+- 符合开闭原则，扩展更自然
+
+抽象工厂：
+- 面向“产品族”创建对象
+- 一次创建一组彼此匹配的对象
+- 适合同一套风格、同一套环境下的多个组件组合创建
+
+区别总结：
+- 工厂方法关注“一个产品怎么创建”
+- 抽象工厂关注“一组关联产品怎么一起创建”
+
+典型场景：
+- 数据库驱动切换
+- UI 组件主题切换
+- 不同厂商 SDK 适配`,
+    analogy: '工厂方法像单独生产手机；抽象工厂像一次性配齐手机、耳机、充电器这一整套产品族。',
+    importance: 'medium'
+  },
+  {
+    id: 'java-18',
+    question: 'Java 应用性能排查一般从哪里开始？',
+    answer: `面试里不要一上来就说某个命令，而要讲出排查顺序。
+
+常见思路：
+1. 先看现象
+- CPU 高
+- 内存涨
+- Full GC 频繁
+- 接口 RT 变慢
+- 线程堆积
+
+2. 再定方向
+- CPU 高：先看热点线程，再看线程栈
+- 内存高：看堆使用、对象分布、GC 情况
+- 响应慢：看慢 SQL、外部依赖、线程池队列
+
+3. 常用工具
+- \`top\` / \`htop\`：看系统负载
+- \`jps\`：找 Java 进程
+- \`jstack\`：看线程栈、死锁、阻塞点
+- \`jmap -histo\` / heap dump：看对象分布
+- \`jstat\`：看 GC 指标
+- Arthas：线上排查非常高频
+
+4. 最后落到根因
+- 是代码问题、配置问题、SQL 问题，还是依赖抖动
+
+面试高频加分点：
+- 先监控、再定位、后优化
+- 不要只会“加机器”`,
+    analogy: '性能排查像医院问诊，先看症状，再做化验，最后才能下结论开药。',
+    importance: 'high'
+  },
+  {
+    id: 'java-19',
+    question: '反射为什么灵活，但在性能和安全上要谨慎使用？',
+    answer: `反射的价值在于“运行时动态拿到类信息并执行”，所以框架里大量使用它，比如 Spring 的依赖注入、AOP、注解处理。
+
+但要谨慎的原因主要有三点：
+1. 性能开销更高
+- 反射调用比直接调用多了一层元数据解析和访问检查
+- 高频主链路不适合重度依赖反射
+
+2. 可读性和可维护性更差
+- 调用关系不直观
+- 出问题时排查难度更高
+
+3. 安全边界更敏感
+- setAccessible 这类能力会绕过部分封装限制
+- 如果滥用，容易破坏封装性
+
+面试回答建议：
+- 业务代码少直接用
+- 框架底层会用
+- 热路径尽量避免频繁反射，可结合缓存、字节码增强等优化`,
+    analogy: '反射像万能钥匙，确实方便，但开门慢一点，而且权限边界更需要控制。',
+    importance: 'medium'
+  },
+  {
+    id: 'java-20',
+    question: 'serialVersionUID 有什么作用？为什么序列化类通常建议显式声明？',
+    answer: `serialVersionUID 是序列化版本号，用来校验反序列化时类结构是否兼容。
+
+为什么建议显式声明：
+1. 避免编译器自动生成
+- 自动生成受类结构变化影响
+- 一改字段就可能变
+
+2. 便于控制兼容性
+- 你可以明确决定“这次改动是否允许兼容旧数据”
+
+3. 降低线上反序列化失败风险
+- 否则可能出现 InvalidClassException
+
+面试里可以顺手补一句：
+- 如果类只是临时对象、不参与序列化落盘或远程传输，可以不太关注
+- 但一旦涉及缓存、消息、文件持久化，最好显式声明`,
+    analogy: 'serialVersionUID 像文件格式版本号，版本对不上，旧文件就可能打不开。',
+    importance: 'medium'
   }
 ];
