@@ -191,3 +191,22 @@ test('答案格式化应把有序项下的说明归并为同一个列表，避�
   assert.match(formatted, /2\. 懒汉式\n   - 第一次使用时再创建\n   - 需要处理线程安全问题/);
   assert.match(formatted, /3\. 双重检查锁（DCL）\n   - 先判空，再加锁，再判空/);
 });
+
+test('移动端应使用横向模块导航、有限高列表和详情自动定位', () => {
+  assert.match(appSource, /data-layout="mobile-category-nav"/);
+  assert.match(appSource, /overflow-x-auto px-4/);
+  assert.match(appSource, /function App/);
+  assert.match(appSource, /const scrollDetailIntoView =/);
+  assert.match(appSource, /window\.matchMedia\('\(min-width: 1024px\)'\)/);
+  assert.match(appSource, /scrollIntoView\(\{ behavior: 'smooth', block: 'start' \}\)/);
+  assert.match(appSource, /max-h-\[42vh\]/);
+  assert.match(appSource, /max-h-\[46vh\]/);
+});
+
+test('算法移动端控件与代码块应避免撑破屏幕', () => {
+  assert.match(appSource, /grid grid-cols-3 rounded-xl border border-zinc-200 bg-zinc-50 p-1 sm:inline-flex/);
+  assert.match(appSource, /overflow-x-auto rounded-2xl border border-zinc-200 shadow-sm/);
+  assert.match(appSource, /minWidth: 'max-content'/);
+  assert.match(appSource, /fontSize: '0\.8rem'/);
+  assert.match(appSource, /scrollDetailIntoView\(algorithmDetailRef\)/);
+});

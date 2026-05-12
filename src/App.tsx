@@ -403,6 +403,16 @@ export default function App() {
   const scrollContainerToTop = (ref: React.RefObject<HTMLDivElement | null>) => {
     ref.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const scrollDetailIntoView = (ref: React.RefObject<HTMLDivElement | null>) => {
+    scrollContainerToTop(ref);
+    if (typeof window === 'undefined' || window.matchMedia('(min-width: 1024px)').matches) {
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
   React.useEffect(() => {
     setSelectedCommand((current) => {
       if (!filteredCommands.length) {
@@ -1063,7 +1073,7 @@ export default function App() {
                   key={cmd.id}
                   onClick={() => {
                     setSelectedCommand(cmd);
-                    scrollContainerToTop(commandDetailRef);
+                    scrollDetailIntoView(commandDetailRef);
                   }}
                   className={cn(
                     "w-full text-left p-4 rounded-xl border transition-all flex items-center justify-between group",
@@ -1090,7 +1100,7 @@ export default function App() {
           </div>
         </div>
 
-        <div ref={commandDetailRef} className="lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-2 custom-scrollbar">
+        <div ref={commandDetailRef} className="scroll-mt-4 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-2 custom-scrollbar">
           <AnimatePresence mode="wait">
             {selectedCommand ? (
               <motion.div
@@ -1098,13 +1108,13 @@ export default function App() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm h-full min-h-full"
+                className="h-full min-h-full rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8"
               >
                 <div className="flex items-center gap-3 mb-6">
                   <div className={cn("p-3 rounded-xl", mainCategory === 'linux' ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-blue-600")}>
                     <Terminal size={24} />
                   </div>
-                  <h3 className="text-2xl font-bold font-mono">{selectedCommand.command}</h3>
+                  <h3 className="break-all font-mono text-xl font-bold sm:text-2xl">{selectedCommand.command}</h3>
                 </div>
 
                 <div className="space-y-6">
@@ -1115,8 +1125,8 @@ export default function App() {
 
                   <section>
                     <h4 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-2">使用示例</h4>
-                    <div className="bg-zinc-900 rounded-xl p-4 font-mono text-blue-400 flex items-center justify-between group">
-                      <code>{selectedCommand.example}</code>
+                    <div className="group flex items-center justify-between gap-3 overflow-x-auto rounded-xl bg-zinc-900 p-4 font-mono text-blue-400">
+                      <code className="whitespace-nowrap">{selectedCommand.example}</code>
                       <button 
                         onClick={() => navigator.clipboard.writeText(selectedCommand.example)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-white/10 rounded-lg text-white"
@@ -1246,13 +1256,13 @@ export default function App() {
               <h3 className="px-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">
                 {mainCategory === 'sql' ? '题目列表' : '问题列表'}
               </h3>
-              <div className="space-y-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain lg:pr-2 custom-scrollbar">
+              <div className="max-h-[42vh] space-y-3 overflow-y-auto overscroll-contain pr-1 custom-scrollbar lg:max-h-none lg:min-h-0 lg:flex-1 lg:pr-2">
                 {filteredInterview.map((point) => (
                   <button
                     key={point.id}
                     onClick={() => {
                       setSelectedInterview(point);
-                      scrollContainerToTop(interviewDetailRef);
+                      scrollDetailIntoView(interviewDetailRef);
                     }}
                     className={cn(
                       'w-full rounded-xl border p-4 text-left transition-all group',
@@ -1298,7 +1308,7 @@ export default function App() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
+                  className="scroll-mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
                 >
                   <div className="mb-6 flex items-start gap-3">
                     <div className={cn('rounded-xl p-3', accent.icon)}>
@@ -1315,7 +1325,7 @@ export default function App() {
                           {getCategoryLabel(mainCategory)}
                         </span>
                       </div>
-                      <h3 className="text-2xl font-bold leading-snug">{selectedInterview.question}</h3>
+                      <h3 className="text-xl font-bold leading-snug sm:text-2xl">{selectedInterview.question}</h3>
                     </div>
                   </div>
 
@@ -1324,7 +1334,7 @@ export default function App() {
                       <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">
                         <CheckCircle2 size={14} className="text-green-500" /> 标准回答
                       </h4>
-                      <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6">
+                      <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-4 sm:p-6">
                         <div className="interview-answer prose prose-zinc max-w-none text-zinc-700">
                           <Markdown
                             components={{
@@ -1380,7 +1390,7 @@ export default function App() {
                         <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">
                           <Info size={14} className="text-blue-500" /> 补充说明
                         </h4>
-                        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6 italic text-blue-900">
+                        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 italic text-blue-900 sm:p-6">
                           {selectedInterview.analogy}
                         </div>
                       </section>
@@ -1420,7 +1430,7 @@ export default function App() {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="space-y-3">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
               <button
                 onClick={() => setAlgorithmSection('problems')}
                 className={cn('rounded-lg px-3 py-1 text-sm font-medium transition-all', algorithmSection === 'problems' ? 'bg-indigo-100 text-indigo-600' : 'text-zinc-400 hover:text-zinc-600')}
@@ -1435,7 +1445,7 @@ export default function App() {
               </button>
             </div>
             {algorithmSection === 'problems' && (
-              <div className="mt-2 flex items-center gap-4">
+              <div className="mt-2 flex flex-wrap items-center gap-2 sm:gap-4">
                 <button
                   onClick={() => setAlgoType('codetop')}
                   className={cn('rounded-lg px-3 py-1 text-sm font-medium transition-all', algoType === 'codetop' ? 'bg-indigo-100 text-indigo-600' : 'text-zinc-400 hover:text-zinc-600')}
@@ -1469,14 +1479,14 @@ export default function App() {
               <h3 className="px-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">
                 {algorithmSection === 'templates' ? '模板目录' : '题目目录'}
               </h3>
-              <div className="space-y-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain lg:pr-2 custom-scrollbar">
+              <div className="max-h-[46vh] space-y-3 overflow-y-auto overscroll-contain pr-1 custom-scrollbar lg:max-h-none lg:min-h-0 lg:flex-1 lg:pr-2">
                 {algorithmSection === 'templates' ? (
                   filteredAlgorithmTemplates.map((item) => (
                     <button
                       key={item.id}
                       onClick={() => {
                         setSelectedAlgorithmTemplate(item);
-                        scrollContainerToTop(algorithmDetailRef);
+                        scrollDetailIntoView(algorithmDetailRef);
                       }}
                       className={cn(
                         'w-full rounded-xl border p-4 text-left transition-all group',
@@ -1515,7 +1525,7 @@ export default function App() {
                           key={algo.id}
                           onClick={() => {
                             setSelectedAlgorithm(algo);
-                            scrollContainerToTop(algorithmDetailRef);
+                            scrollDetailIntoView(algorithmDetailRef);
                           }}
                           className={cn(
                             'w-full rounded-xl border p-4 text-left transition-all group',
@@ -1554,7 +1564,7 @@ export default function App() {
                       key={algo.id}
                       onClick={() => {
                         setSelectedAlgorithm(algo);
-                        scrollContainerToTop(algorithmDetailRef);
+                        scrollDetailIntoView(algorithmDetailRef);
                       }}
                       className={cn(
                         'w-full rounded-xl border p-4 text-left transition-all group',
@@ -1597,19 +1607,19 @@ export default function App() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
+                    className="scroll-mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
                   >
                     <div className="mb-6 flex flex-wrap items-center gap-3">
                       <div className="rounded-xl bg-indigo-100 p-3 text-indigo-600">
                         <Code2 size={24} />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="mb-2">
                           <span className={cn('rounded-full border px-2 py-1 text-xs font-semibold', algoAccent.pill)}>
                             模板
                           </span>
                         </div>
-                        <h3 className="text-2xl font-bold">{selectedAlgorithmTemplate.title}</h3>
+                        <h3 className="text-xl font-bold sm:text-2xl">{selectedAlgorithmTemplate.title}</h3>
                         <p className="mt-2 text-sm text-zinc-500">{selectedAlgorithmTemplate.summary}</p>
                       </div>
                     </div>
@@ -1619,7 +1629,7 @@ export default function App() {
                         <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">
                           <Info size={14} className="text-indigo-500" /> 适用场景
                         </h4>
-                        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/30 p-6 leading-relaxed text-zinc-700">
+                        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/30 p-4 leading-relaxed text-zinc-700 sm:p-6">
                           {selectedAlgorithmTemplate.usage}
                         </div>
                       </section>
@@ -1628,11 +1638,11 @@ export default function App() {
                         <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">
                           <Terminal size={14} className="text-indigo-500" /> Java 模板
                         </h4>
-                        <div className="overflow-hidden rounded-2xl border border-zinc-200 shadow-sm">
+                        <div className="overflow-x-auto rounded-2xl border border-zinc-200 shadow-sm">
                           <SyntaxHighlighter
                             language="java"
                             style={atomDark}
-                            customStyle={{ margin: 0, padding: '1.5rem', fontSize: '0.875rem', lineHeight: '1.5', borderRadius: '1rem' }}
+                            customStyle={{ margin: 0, minWidth: 'max-content', padding: '1rem', fontSize: '0.8rem', lineHeight: '1.5', borderRadius: '1rem' }}
                           >
                             {selectedAlgorithmTemplate.code}
                           </SyntaxHighlighter>
@@ -1654,7 +1664,7 @@ export default function App() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
+                  className="scroll-mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
                 >
                   <div className="mb-6 flex flex-wrap items-center gap-3">
                     <div className="rounded-xl bg-indigo-100 p-3 text-indigo-600">
@@ -1671,14 +1681,14 @@ export default function App() {
                           {selectedAlgorithm.difficulty}
                         </span>
                       </div>
-                      <h3 className="text-2xl font-bold">{selectedAlgorithm.title}</h3>
+                      <h3 className="text-xl font-bold sm:text-2xl">{selectedAlgorithm.title}</h3>
                     </div>
                     {selectedAlgorithm.url && (
                       <a
                         href={selectedAlgorithm.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="ml-auto flex items-center gap-1.5 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-100"
+                        className="flex items-center gap-1.5 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-100 sm:ml-auto"
                       >
                         <ExternalLink size={14} />
                         力扣原题
@@ -1691,7 +1701,7 @@ export default function App() {
                       <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">
                         <BookOpen size={14} className="text-indigo-500" /> 题目描述
                       </h4>
-                      <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6 whitespace-pre-wrap leading-relaxed text-zinc-700">
+                      <div className="whitespace-pre-wrap rounded-2xl border border-zinc-100 bg-zinc-50 p-4 leading-relaxed text-zinc-700 sm:p-6">
                         {selectedAlgorithm.description}
                       </div>
                     </section>
@@ -1700,7 +1710,7 @@ export default function App() {
                       <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">
                         <Info size={14} className="text-indigo-500" /> 解题思路
                       </h4>
-                      <div className="rounded-2xl border border-indigo-100 bg-indigo-50/30 p-6 text-lg leading-relaxed text-zinc-700">
+                      <div className="rounded-2xl border border-indigo-100 bg-indigo-50/30 p-4 leading-relaxed text-zinc-700 sm:p-6 sm:text-lg">
                         {selectedAlgorithm.approach}
                       </div>
                     </section>
@@ -1710,33 +1720,33 @@ export default function App() {
                         <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">
                           <Terminal size={14} className="text-indigo-500" /> {codeModeTitle}
                         </h4>
-                        <div className="inline-flex rounded-xl border border-zinc-200 bg-zinc-50 p-1">
+                        <div className="grid grid-cols-3 rounded-xl border border-zinc-200 bg-zinc-50 p-1 sm:inline-flex">
                           <button
                             onClick={() => setAlgorithmCodeMode('core')}
-                            className={cn('rounded-lg px-3 py-1.5 text-sm font-medium transition-colors', algorithmCodeMode === 'core' ? 'bg-white text-indigo-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700')}
+                            className={cn('rounded-lg px-2 py-1.5 text-xs font-medium transition-colors sm:px-3 sm:text-sm', algorithmCodeMode === 'core' ? 'bg-white text-indigo-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700')}
                           >
                             核心代码
                           </button>
                           <button
                             onClick={() => setAlgorithmCodeMode('acm')}
-                            className={cn('rounded-lg px-3 py-1.5 text-sm font-medium transition-colors', algorithmCodeMode === 'acm' ? 'bg-white text-indigo-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700')}
+                            className={cn('rounded-lg px-2 py-1.5 text-xs font-medium transition-colors sm:px-3 sm:text-sm', algorithmCodeMode === 'acm' ? 'bg-white text-indigo-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700')}
                           >
                             ACM模式
                           </button>
                           <button
                             onClick={() => setAlgorithmCodeMode('acm-lite')}
-                            className={cn('rounded-lg px-3 py-1.5 text-sm font-medium transition-colors', algorithmCodeMode === 'acm-lite' ? 'bg-white text-indigo-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700')}
+                            className={cn('rounded-lg px-2 py-1.5 text-xs font-medium transition-colors sm:px-3 sm:text-sm', algorithmCodeMode === 'acm-lite' ? 'bg-white text-indigo-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700')}
                           >
                             ACM简写
                           </button>
                         </div>
                       </div>
                       {codeModeHint && <p className="mb-4 text-sm text-zinc-500">{codeModeHint}</p>}
-                      <div className="overflow-hidden rounded-2xl border border-zinc-200 shadow-sm">
+                      <div className="overflow-x-auto rounded-2xl border border-zinc-200 shadow-sm">
                         <SyntaxHighlighter
                           language="java"
                           style={atomDark}
-                          customStyle={{ margin: 0, padding: '1.5rem', fontSize: '0.875rem', lineHeight: '1.5', borderRadius: '1rem' }}
+                          customStyle={{ margin: 0, minWidth: 'max-content', padding: '1rem', fontSize: '0.8rem', lineHeight: '1.5', borderRadius: '1rem' }}
                         >
                           {algorithmCodeMode === 'core'
                             ? selectedAlgorithm.code
@@ -1768,13 +1778,13 @@ export default function App() {
         <div className="lg:h-full lg:min-h-0">
           <div className="space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm lg:flex lg:h-full lg:min-h-0 lg:flex-col">
             <h3 className="px-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">文档目录</h3>
-            <div className="space-y-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain lg:pr-2 custom-scrollbar">
+            <div className="max-h-[42vh] space-y-3 overflow-y-auto overscroll-contain pr-1 custom-scrollbar lg:max-h-none lg:min-h-0 lg:flex-1 lg:pr-2">
               {currentDocs.map((doc, index) => (
                 <button
                   key={doc.title}
                   onClick={() => {
                     setSelectedDocIndex(index);
-                    scrollContainerToTop(docDetailRef);
+                    scrollDetailIntoView(docDetailRef);
                   }}
                   className={cn(
                     'w-full rounded-xl border p-4 text-left transition-all group',
@@ -1825,7 +1835,7 @@ export default function App() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
+                className="scroll-mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
               >
                 <div className="mb-6 flex items-start gap-3">
                   <div
@@ -1836,7 +1846,7 @@ export default function App() {
                   >
                     <BookOpen size={24} />
                   </div>
-                  <h3 className="text-2xl font-bold leading-snug">{selectedDoc.title}</h3>
+                  <h3 className="text-xl font-bold leading-snug sm:text-2xl">{selectedDoc.title}</h3>
                 </div>
 
                 <div className="markdown-body prose prose-zinc max-w-none">
@@ -1846,7 +1856,7 @@ export default function App() {
                         const match = /language-(\w+)/.exec(className || '');
                         if (match) {
                           return (
-                            <div className="my-4 overflow-hidden rounded-2xl border border-zinc-200 shadow-sm">
+                            <div className="my-4 overflow-x-auto rounded-2xl border border-zinc-200 shadow-sm">
                               <SyntaxHighlighter
                                 language={match[1]}
                                 style={atomDark}
@@ -2032,14 +2042,14 @@ export default function App() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="bg-zinc-900 py-3 text-white shrink-0 lg:hidden">
-          <div className="px-4 flex flex-wrap items-center justify-center gap-2">
+        <div className="shrink-0 bg-zinc-900 py-3 text-white lg:hidden">
+          <div data-layout="mobile-category-nav" className="no-scrollbar flex items-center gap-2 overflow-x-auto px-4">
             {mainCategories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => { setMainCategory(cat.id as MainCategory); setActiveTab(getDefaultTab(cat.id as MainCategory)); }}
                 className={cn(
-                  "flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-1 text-sm font-medium transition-all",
+                  "flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-all",
                   mainCategory === cat.id
                     ? (cat.color === 'emerald' ? "bg-emerald-500 text-white" :
                        cat.color === 'blue' ? "bg-blue-500 text-white" :
