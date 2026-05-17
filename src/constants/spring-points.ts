@@ -125,7 +125,7 @@ export const SPRING_POINTS: InterviewPoint[] = [
   },
   {
    id: 'spring-18',
-   question: 'Spring 事务传播机制有哪些？面试里重点说哪几个？',
+  question: 'Spring 事务传播机制有哪些？面试里常说哪几个？',
    answer: '事务传播机制描述的是：一个带事务的方法调用另一个带事务的方法时，事务边界怎么处理。\n\n常见传播行为：\n- \`REQUIRED\`：默认值，有事务就加入，没有就新建\n- \`REQUIRES_NEW\`：不管外面有没有，自己新开一个事务\n- \`SUPPORTS\`：有事务就加入，没有也能执行\n- \`MANDATORY\`：必须在事务里运行，否则报错\n- \`NOT_SUPPORTED\`：挂起当前事务，以非事务方式执行\n- \`NEVER\`：如果当前有事务就直接报错\n- \`NESTED\`：嵌套事务，常基于保存点实现\n\n面试重点通常讲三个：\n1. REQUIRED\n2. REQUIRES_NEW\n3. NESTED\n\n答题重点：\n- REQUIRED 最常用\n- REQUIRES_NEW 适合日志、审计这类需要独立提交的场景\n- NESTED 更像大事务里的局部回滚。',
    analogy: '事务传播像多人一起办手续：有的窗口跟着主流程走，有的窗口要求自己单独立案，有的窗口只是顺带处理一下。',
    importance: 'high'

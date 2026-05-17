@@ -12,6 +12,17 @@ function shouldNestBullet(lines: string[], currentIndex: number) {
 export function formatInterviewAnswer(content: string) {
   const normalized = content
     .replace(/\r\n/g, '\n')
+    .replace(/【面试回答重点】/g, '### 回答建议')
+    .replace(/###\s*面试回答重点/g, '### 回答建议')
+    .replace(/###\s*面试里重点讲哪几个/g, '### 回答建议')
+    .replace(/###\s*面试重点说哪几个/g, '### 回答建议')
+    .replace(/###\s*面试重点/g, '### 回答建议')
+    .replace(/###\s*答题重点/g, '### 回答建议')
+    .replace(/答题重点：/g, '回答建议：')
+    .replace(/面试官真正想听的重点/g, '面试官真正想听什么')
+    .replace(/面试里重点说哪几个/g, '面试里常说哪几个')
+    .replace(/面试重点通常讲/g, '通常先讲')
+    .replace(/重点讲/g, '通常先讲')
     .replace(/([：:。；;）)])\s*(\d+\.\s)/g, '$1\n$2')
     .replace(/([：:。；;）)])\s*(-\s)/g, '$1\n$2')
     .replace(/\n{3,}/g, '\n\n')

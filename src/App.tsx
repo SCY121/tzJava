@@ -11,6 +11,7 @@ import {
   Play,
   CheckCircle2,
   ExternalLink,
+  Copy,
   Menu,
   X,
   Info,
@@ -267,6 +268,74 @@ function dedupeDocs<T extends { title: string }>(docs: T[]) {
   });
 }
 
+const COMMAND_CATEGORY_META = {
+  linux: {
+    file: { label: '文件路径', hint: '目录、文件、查找与移动' },
+    text: { label: '文本日志', hint: '查看、筛选、实时跟踪' },
+    process: { label: '进程线程', hint: '进程状态、资源占用、终止' },
+    service: { label: '服务管理', hint: 'systemd、服务状态与日志' },
+    network: { label: '网络端口', hint: '连接、监听与链路排查' },
+    system: { label: '系统资源', hint: '磁盘、内存与系统状态' },
+    deploy: { label: '部署运行', hint: '启动、重定向与线上运行' },
+    permission: { label: '权限用户', hint: '权限位、属主和访问控制' },
+  },
+  docker: {
+    image: { label: '镜像管理', hint: '拉取、构建、标签与发布' },
+    container: { label: '容器运行', hint: '创建、启动、进入与删除' },
+    network: { label: '容器网络', hint: '连通、映射与网络排查' },
+    storage: { label: '数据卷', hint: '挂载、持久化与目录映射' },
+    compose: { label: 'Compose', hint: '多服务编排与联调' },
+    monitor: { label: '监控排障', hint: '日志、资源与运行状态' },
+    cleanup: { label: '清理回收', hint: '无用镜像、容器与缓存' },
+  },
+} as const;
+
+function getCommandCategoryMeta(category: string, mainCategory: MainCategory) {
+  if (mainCategory === 'linux') {
+    return COMMAND_CATEGORY_META.linux[category as keyof typeof COMMAND_CATEGORY_META.linux] ?? {
+      label: '命令分类',
+      hint: '常用系统命令',
+    };
+  }
+
+  if (mainCategory === 'docker') {
+    return COMMAND_CATEGORY_META.docker[category as keyof typeof COMMAND_CATEGORY_META.docker] ?? {
+      label: '命令分类',
+      hint: '常用容器命令',
+    };
+  }
+
+  return { label: '命令分类', hint: '常用命令' };
+}
+
+function extractCommandFlags(command: Command) {
+  const matches = [
+    ...command.example.matchAll(/(?:^|\s)(--?[a-zA-Z][\w-]*)/g),
+    ...command.explanation.matchAll(/`(--?[a-zA-Z][\w-]*)`/g),
+  ];
+  const seen = new Set<string>();
+  const flags: string[] = [];
+
+  for (const match of matches) {
+    const flag = match[1]?.trim();
+    if (!flag || seen.has(flag)) {
+      continue;
+    }
+    seen.add(flag);
+    flags.push(flag);
+  }
+
+  return flags.slice(0, 8);
+}
+
+function buildCommandNotes(explanation: string) {
+  return explanation
+    .split(/[。！？!?\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
 export default function App() {
   const [mainCategory, setMainCategory] = useState<MainCategory>('linux');
   const [activeTab, setActiveTab] = useState<TabType>(getDefaultTab('linux'));
@@ -276,6 +345,7 @@ export default function App() {
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<AlgorithmPoint | null>(null);
   const [selectedAlgorithmTemplate, setSelectedAlgorithmTemplate] = useState<AlgorithmTemplate | null>(null);
   const [selectedDocIndex, setSelectedDocIndex] = useState(0);
+  const [collapsedCommandGroups, setCollapsedCommandGroups] = useState<Record<string, boolean>>({});
   const [algoType, setAlgoType] = useState<'codetop' | 'hot100'>('codetop');
   const [algorithmSection, setAlgorithmSection] = useState<'problems' | 'templates'>('problems');
   const [algorithmCodeMode, setAlgorithmCodeMode] = useState<'core' | 'acm' | 'acm-lite'>('core');
@@ -309,7 +379,6 @@ export default function App() {
       : mainCategory === 'docker'
         ? dedupeDocs([...DOCKER_REFINED_DOCS, ...DOCKER_DOCS, ...DOCKER_DOC_SUPPLEMENTS])
         : [];
-  const selectedDoc = currentDocs[selectedDocIndex] ?? null;
   const currentInterview = 
     mainCategory === 'java' ? dedupeInterviewPoints([...JAVA_REFINED_POINTS, ...JAVA_POINTS, ...JAVA_HANDBOOK_POINTS, ...JAVA_SYSTEMATIC_POINTS]) :
     mainCategory === 'jvm' ? dedupeInterviewPoints([...JVM_REFINED_POINTS, ...JVM_POINTS, ...JVM_HANDBOOK_POINTS, ...JVM_SYSTEMATIC_POINTS]) : 
@@ -348,6 +417,27 @@ export default function App() {
       return command.includes(keyword) || description.includes(keyword);
     });
   }, [searchQuery, currentCommands]);
+
+  const groupedCommands = useMemo(() => {
+    const groups = new Map<string, Command[]>();
+    filteredCommands.forEach((command) => {
+      const items = groups.get(command.category) ?? [];
+      items.push(command);
+      groups.set(command.category, items);
+    });
+    return Array.from(groups.entries()).map(([category, items]) => ({ category, items }));
+  }, [filteredCommands]);
+
+  const filteredDocs = useMemo(() => {
+    const keyword = searchQuery.toLowerCase();
+    return currentDocs.filter((doc) => {
+      const title = typeof doc?.title === 'string' ? doc.title.toLowerCase() : '';
+      const content = typeof (doc as any)?.content === 'string' ? doc.content.toLowerCase() : '';
+      return title.includes(keyword) || content.includes(keyword);
+    });
+  }, [searchQuery, currentDocs]);
+
+  const selectedDoc = filteredDocs[selectedDocIndex] ?? null;
 
   const filteredInterview = useMemo(() => {
     const keyword = searchQuery.toLowerCase();
@@ -478,6 +568,18 @@ export default function App() {
   React.useEffect(() => {
     setSelectedDocIndex(0);
   }, [mainCategory]);
+
+  React.useEffect(() => {
+    setSelectedDocIndex((current) => {
+      if (!filteredDocs.length) {
+        return 0;
+      }
+      if (current < filteredDocs.length) {
+        return current;
+      }
+      return 0;
+    });
+  }, [filteredDocs]);
 
   const renderIntro = () => {
     const introThemes = {
@@ -658,7 +760,7 @@ export default function App() {
         titlePrefix: '攻克',
         titleHighlight: 'JUC',
         titleSuffix: '并发核心问题',
-        description: '覆盖线程、锁、线程池、可见性、并发容器和线程协作，重点回答面试里的追问。',
+        description: '覆盖线程、锁、线程池、可见性、并发容器和线程协作，系统回答常见追问。',
         primaryLabel: '开始学习面试题',
         cards: [
           { icon: Layers, title: '锁与可见性', desc: '从 synchronized、volatile 到 Lock 与 happens-before。' },
@@ -834,7 +936,7 @@ export default function App() {
             <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
               <Layers className="mb-4 text-violet-500" size={32} />
               <h3 className="mb-2 text-xl font-bold">高频核心</h3>
-              <p className="text-zinc-600">重点讲清 RAG 链路、Embedding、Rerank、Agent、MCP、幻觉与评测。</p>
+              <p className="text-zinc-600">系统讲清 RAG 链路、Embedding、Rerank、Agent、MCP、幻觉与评测。</p>
             </div>
             <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
               <CheckCircle2 className="mb-4 text-violet-500" size={32} />
@@ -1050,52 +1152,127 @@ export default function App() {
       animate={{ opacity: 1 }}
       className="space-y-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col"
     >
-      <div className="flex justify-end">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
-          <input 
-            type="text" 
-            placeholder="搜索命令..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 pr-4 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
-          />
-        </div>
-      </div>
-
-      <div data-layout="focus-workspace" className="grid gap-8 items-start lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <div data-layout="focus-workspace" className="grid gap-8 items-start lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[340px_minmax(0,1fr)]">
         <div className="lg:col-span-1 lg:h-full lg:min-h-0">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm lg:flex lg:h-full lg:min-h-0 lg:flex-col">
-            <h3 className="mb-4 px-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">命令目录</h3>
-            <div className="space-y-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain lg:pr-2 custom-scrollbar">
-              {filteredCommands.map((cmd) => (
-                <button
-                  key={cmd.id}
-                  onClick={() => {
-                    setSelectedCommand(cmd);
-                    scrollDetailIntoView(commandDetailRef);
-                  }}
-                  className={cn(
-                    "w-full text-left p-4 rounded-xl border transition-all flex items-center justify-between group",
-                    selectedCommand?.id === cmd.id 
-                      ? (mainCategory === 'linux' ? "bg-emerald-50 border-emerald-200 shadow-sm" : "bg-blue-50 border-blue-200 shadow-sm")
-                      : "bg-white border-zinc-100 hover:border-zinc-300 hover:bg-zinc-50"
-                  )}
-                >
-                  <div>
-                    <div className={cn("font-mono font-bold", mainCategory === 'linux' ? "text-emerald-600" : "text-blue-600")}>
-                      {cmd.command}
-                    </div>
-                    <div className="text-sm text-zinc-500">{cmd.description}</div>
-                  </div>
-                  <ChevronRight size={16} className={cn(
-                    "transition-transform",
-                    selectedCommand?.id === cmd.id 
-                      ? (mainCategory === 'linux' ? "translate-x-1 text-emerald-500" : "translate-x-1 text-blue-500") 
-                      : "text-zinc-300 group-hover:text-zinc-400"
-                  )} />
-                </button>
-              ))}
+          <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+            <div className="mb-4 space-y-3 px-2">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-400">命令目录</h3>
+                  <p className="mt-1 text-xs text-zinc-500">按类别归拢，便于集中复习同类命令。</p>
+                </div>
+                <span className={cn(
+                  'rounded-full border px-3 py-1 text-xs font-semibold',
+                  mainCategory === 'linux' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-blue-200 bg-blue-50 text-blue-700'
+                )}>
+                  {filteredCommands.length} 条
+                </span>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                <input
+                  type="text"
+                  placeholder="搜索命令..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full rounded-2xl border border-zinc-200 py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="space-y-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain lg:pr-2 custom-scrollbar">
+              {groupedCommands.map((group) => {
+                const meta = getCommandCategoryMeta(group.category, mainCategory);
+                const collapsed = collapsedCommandGroups[`${mainCategory}:${group.category}`] ?? false;
+                return (
+                  <section key={group.category} className="space-y-3" data-command-category={group.category}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCollapsedCommandGroups((current) => ({
+                          ...current,
+                          [`${mainCategory}:${group.category}`]: !collapsed,
+                        }))
+                      }
+                      className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-3 py-2 text-left transition hover:border-zinc-200 hover:bg-zinc-100/70"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-zinc-800">{meta.label}</div>
+                          <div className="truncate text-xs text-zinc-500">{meta.hint}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-500 shadow-sm">
+                            {group.items.length}
+                          </span>
+                          <ChevronRight
+                            size={15}
+                            className={cn('text-zinc-400 transition-transform', collapsed && 'rotate-90')}
+                          />
+                        </div>
+                      </div>
+                    </button>
+                    {!collapsed && (
+                      <div className="space-y-2">
+                        {group.items.map((cmd) => {
+                          const flags = extractCommandFlags(cmd);
+                          const active = selectedCommand?.id === cmd.id;
+                          return (
+                            <button
+                              key={cmd.id}
+                              onClick={() => {
+                                setSelectedCommand(cmd);
+                                scrollDetailIntoView(commandDetailRef);
+                              }}
+                              className={cn(
+                                'group w-full rounded-2xl border px-4 py-3 text-left transition-all',
+                                active
+                                  ? (mainCategory === 'linux'
+                                      ? 'border-emerald-200 bg-emerald-50 shadow-sm'
+                                      : 'border-blue-200 bg-blue-50 shadow-sm')
+                                  : 'border-zinc-100 bg-white hover:border-zinc-300 hover:bg-zinc-50'
+                              )}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <div className={cn(
+                                    'truncate font-mono text-[15px] font-bold',
+                                    mainCategory === 'linux' ? 'text-emerald-700' : 'text-blue-700'
+                                  )}>
+                                    {cmd.command}
+                                  </div>
+                                  <p className="mt-1 line-clamp-2 text-sm leading-6 text-zinc-600">{cmd.description}</p>
+                                  <div className="mt-3 flex flex-wrap gap-2">
+                                    <span className={cn(
+                                      'rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                                      mainCategory === 'linux' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+                                    )}>
+                                      {meta.label}
+                                    </span>
+                                    {flags.slice(0, 2).map((flag) => (
+                                      <span key={flag} className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 font-mono text-[11px] text-zinc-600">
+                                        {flag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                                <ChevronRight
+                                  size={16}
+                                  className={cn(
+                                    'mt-1 shrink-0 transition-transform',
+                                    active
+                                      ? (mainCategory === 'linux' ? 'translate-x-1 text-emerald-500' : 'translate-x-1 text-blue-500')
+                                      : 'text-zinc-300 group-hover:text-zinc-400'
+                                  )}
+                                />
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1108,50 +1285,153 @@ export default function App() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="h-full min-h-full rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8"
+                className="h-full min-h-full rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8"
               >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className={cn("p-3 rounded-xl", mainCategory === 'linux' ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-blue-600")}>
-                    <Terminal size={24} />
-                  </div>
-                  <h3 className="break-all font-mono text-xl font-bold sm:text-2xl">{selectedCommand.command}</h3>
-                </div>
+                {(() => {
+                  const meta = getCommandCategoryMeta(selectedCommand.category, mainCategory);
+                  const flags = extractCommandFlags(selectedCommand);
+                  const notes = buildCommandNotes(selectedCommand.explanation);
 
-                <div className="space-y-6">
-                  <section>
-                    <h4 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-2">功能描述</h4>
-                    <p className="text-lg text-zinc-700">{selectedCommand.description}</p>
-                  </section>
+                  return (
+                    <div className="space-y-6">
+                      <div className={cn(
+                        'overflow-hidden rounded-3xl border p-5 sm:p-6',
+                        mainCategory === 'linux' ? 'border-emerald-100 bg-emerald-50/70' : 'border-blue-100 bg-blue-50/70'
+                      )}>
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <div className="mb-3 flex flex-wrap items-center gap-2">
+                              <span className={cn(
+                                'rounded-full px-3 py-1 text-xs font-semibold',
+                                mainCategory === 'linux' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+                              )}>
+                                {meta.label}
+                              </span>
+                              <span className="rounded-full border border-white/80 bg-white/80 px-3 py-1 text-xs text-zinc-500">
+                                {meta.hint}
+                              </span>
+                            </div>
+                            <h3 className="break-all font-mono text-2xl font-bold text-zinc-900 sm:text-3xl">{selectedCommand.command}</h3>
+                            <p className="mt-3 text-base leading-7 text-zinc-700 sm:text-lg">{selectedCommand.description}</p>
+                          </div>
+                          <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 text-sm text-zinc-500 shadow-sm">
+                            Linux / Docker 命令速查
+                          </div>
+                        </div>
+                      </div>
 
-                  <section>
-                    <h4 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-2">使用示例</h4>
-                    <div className="group flex items-center justify-between gap-3 overflow-x-auto rounded-xl bg-zinc-900 p-4 font-mono text-blue-400">
-                      <code className="whitespace-nowrap">{selectedCommand.example}</code>
-                      <button 
-                        onClick={() => navigator.clipboard.writeText(selectedCommand.example)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-white/10 rounded-lg text-white"
-                        title="复制命令"
-                      >
-                        <HardDrive size={16} />
-                      </button>
+                      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
+                        <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+                          <h4 className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-zinc-400">使用示例</h4>
+                          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-sm">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2 text-xs text-zinc-400">
+                                <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                                <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
+                                <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
+                                <span className="ml-2 uppercase tracking-[0.2em]">shell</span>
+                              </div>
+                              <button
+                                onClick={() => navigator.clipboard.writeText(selectedCommand.example)}
+                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-zinc-200 transition hover:bg-white/10"
+                                title="复制命令"
+                              >
+                                <Copy size={14} />
+                                复制
+                              </button>
+                            </div>
+                            <code className="block overflow-x-auto whitespace-pre-wrap break-all font-mono text-sm leading-7 text-emerald-300">
+                              <span className="mr-3 select-none text-zinc-500">$</span>
+                              {selectedCommand.example}
+                            </code>
+                          </div>
+                        </section>
+
+                        <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+                          <h4 className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-zinc-400">常用参数</h4>
+                          {flags.length ? (
+                            <div className="flex flex-wrap gap-2">
+                              {flags.map((flag) => (
+                                <span
+                                  key={flag}
+                                  className={cn(
+                                    'rounded-xl border px-3 py-2 font-mono text-sm shadow-sm',
+                                    mainCategory === 'linux'
+                                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                                      : 'border-blue-200 bg-blue-50 text-blue-800'
+                                  )}
+                                >
+                                  {flag}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm leading-7 text-zinc-500">这条命令更适合先理解用途和场景，参数通常要结合具体子命令再看。</p>
+                          )}
+                        </section>
+                      </div>
+
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+                          <h4 className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-zinc-400">详细说明</h4>
+                          <div className="prose prose-zinc max-w-none text-sm leading-7 text-zinc-600">
+                            <Markdown
+                              components={{
+                                p: ({ children }) => <p className="mb-3 leading-7 last:mb-0">{children}</p>,
+                                code: ({ className, children, ...props }: any) => {
+                                  const match = /language-(\w+)/.exec(className || '');
+                                  if (match) {
+                                    return (
+                                      <div className="my-4 overflow-x-auto rounded-2xl border border-zinc-200 shadow-sm">
+                                        <SyntaxHighlighter
+                                          language={match[1]}
+                                          style={atomDark}
+                                          customStyle={{ margin: 0, padding: '1.1rem', fontSize: '0.875rem', lineHeight: '1.6', borderRadius: '1rem' }}
+                                        >
+                                          {String(children).replace(/\n$/, '')}
+                                        </SyntaxHighlighter>
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <code className="rounded-md border border-zinc-200 bg-zinc-100 px-1.5 py-0.5 font-mono text-[0.92em] text-zinc-800" {...props}>
+                                      {children}
+                                    </code>
+                                  );
+                                },
+                                ul: ({ children }) => <ul className="mb-4 list-disc space-y-2 pl-5">{children}</ul>,
+                                ol: ({ children }) => <ol className="mb-4 list-decimal space-y-2 pl-5">{children}</ol>,
+                                li: ({ children }) => <li className="leading-7">{children}</li>,
+                                h3: ({ children }) => <h3 className="mb-3 mt-6 text-base font-bold text-zinc-900 first:mt-0">{children}</h3>,
+                              }}
+                            >
+                              {selectedCommand.explanation}
+                            </Markdown>
+                          </div>
+                        </section>
+
+                        <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+                          <h4 className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-zinc-400">使用场景</h4>
+                          <ul className="space-y-3">
+                            {notes.map((note) => (
+                              <li key={note} className="flex items-start gap-3 text-sm leading-7 text-zinc-600">
+                                <CheckCircle2 size={16} className={cn('mt-1 shrink-0', mainCategory === 'linux' ? 'text-emerald-500' : 'text-blue-500')} />
+                                <span>{note}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </section>
+                      </div>
                     </div>
-                  </section>
-
-                  <section>
-                    <h4 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-2">详细解释</h4>
-                    <p className="text-zinc-600 leading-relaxed">{selectedCommand.explanation}</p>
-                  </section>
-
-                  <div className="pt-6 border-t border-zinc-100 flex items-center gap-2 text-sm text-zinc-400">
-                    <CheckCircle2 size={16} className="text-green-500" />
-                    掌握这个命令是 Linux / Docker 学习中的基础一步。
-                  </div>
-                </div>
+                  );
+                })()}
               </motion.div>
             ) : (
-              <div className="bg-zinc-50 rounded-2xl border border-dashed border-zinc-300 p-12 flex flex-col items-center justify-center text-center h-full min-h-full">
+              <div className="flex h-full min-h-full flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-300 bg-zinc-50 p-12 text-center">
+                <Terminal size={48} className="mb-4 text-zinc-300" />
                 <h3 className="text-xl font-semibold text-zinc-400">请先从左侧选择一个命令</h3>
-                <p className="text-zinc-400 mt-2">点击命令查看其详细用法、示例和参数说明。</p>
+                <p className="mt-2 text-zinc-400">点击命令查看作用、常用参数、示例命令和使用场景。</p>
               </div>
             )}
           </AnimatePresence>
@@ -1272,11 +1552,6 @@ export default function App() {
                     )}
                   >
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                      {point.importance === 'high' && (
-                        <span className="rounded uppercase bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600">
-                          重点
-                        </span>
-                      )}
                       <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-semibold', accent.pill)}>
                         {getCategoryLabel(mainCategory)}
                       </span>
@@ -1316,11 +1591,6 @@ export default function App() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex flex-wrap items-center gap-2">
-                        {selectedInterview.importance === 'high' && (
-                          <span className="rounded uppercase bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600">
-                            重点
-                          </span>
-                        )}
                         <span className={cn('rounded-full border px-2 py-1 text-xs font-semibold', accent.pill)}>
                           {getCategoryLabel(mainCategory)}
                         </span>
@@ -1774,12 +2044,35 @@ export default function App() {
 
   const renderDocs = () => (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="lg:flex lg:h-full lg:min-h-0 lg:flex-col">
-      <div data-layout="focus-workspace" className="grid gap-8 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <div data-layout="focus-workspace" className="grid gap-8 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[340px_minmax(0,1fr)]">
         <div className="lg:h-full lg:min-h-0">
-          <div className="space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm lg:flex lg:h-full lg:min-h-0 lg:flex-col">
-            <h3 className="px-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">文档目录</h3>
-            <div className="max-h-[42vh] space-y-3 overflow-y-auto overscroll-contain pr-1 custom-scrollbar lg:max-h-none lg:min-h-0 lg:flex-1 lg:pr-2">
-              {currentDocs.map((doc, index) => (
+          <div className="space-y-4 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+            <div className="space-y-3 px-2">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-400">文档目录</h3>
+                  <p className="mt-1 text-xs text-zinc-500">围绕 Linux / Docker 的命令和场景文档。</p>
+                </div>
+                <span className={cn(
+                  'rounded-full border px-3 py-1 text-xs font-semibold',
+                  mainCategory === 'linux' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-blue-200 bg-blue-50 text-blue-700'
+                )}>
+                  {filteredDocs.length} 篇
+                </span>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                <input
+                  type="text"
+                  placeholder="搜索文档..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full rounded-2xl border border-zinc-200 py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="space-y-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain lg:pr-2 custom-scrollbar">
+              {filteredDocs.map((doc, index) => (
                 <button
                   key={doc.title}
                   onClick={() => {
@@ -1787,7 +2080,7 @@ export default function App() {
                     scrollDetailIntoView(docDetailRef);
                   }}
                   className={cn(
-                    'w-full rounded-xl border p-4 text-left transition-all group',
+                    'group w-full rounded-2xl border p-4 text-left transition-all',
                     selectedDocIndex === index
                       ? mainCategory === 'linux'
                         ? 'border-emerald-200 bg-emerald-50 shadow-sm'
@@ -1796,17 +2089,20 @@ export default function App() {
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div
-                      className={cn(
+                    <div className="min-w-0 flex-1">
+                      <div className={cn(
                         'text-sm font-semibold leading-6',
                         selectedDocIndex === index
                           ? mainCategory === 'linux'
                             ? 'text-emerald-600'
                             : 'text-blue-600'
                           : 'text-zinc-700'
-                      )}
-                    >
-                      {doc.title}
+                      )}>
+                        {doc.title}
+                      </div>
+                      <div className="mt-2 line-clamp-2 text-xs leading-5 text-zinc-500">
+                        {String((doc as any).content ?? '').replace(/\s+/g, ' ').slice(0, 80)}
+                      </div>
                     </div>
                     <ChevronRight
                       size={16}
@@ -1835,7 +2131,7 @@ export default function App() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="scroll-mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
+                className="scroll-mt-4 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
               >
                 <div className="mb-6 flex items-start gap-3">
                   <div
@@ -1846,30 +2142,57 @@ export default function App() {
                   >
                     <BookOpen size={24} />
                   </div>
-                  <h3 className="text-xl font-bold leading-snug sm:text-2xl">{selectedDoc.title}</h3>
+                  <div className="min-w-0">
+                    <h3 className="text-xl font-bold leading-snug sm:text-2xl">{selectedDoc.title}</h3>
+                    <p className="mt-2 text-sm text-zinc-500">
+                      命令、场景、参数和排障思路统一排版，便于快速复盘。
+                    </p>
+                  </div>
                 </div>
 
-                <div className="markdown-body prose prose-zinc max-w-none">
+                <div className="doc-body prose prose-zinc max-w-none">
                   <Markdown
                     components={{
+                      h3: ({ children }) => <h3 className="mt-6 mb-3 text-lg font-bold text-zinc-900 first:mt-0">{children}</h3>,
+                      p: ({ children }) => <p className="mb-3 leading-7 text-zinc-700 last:mb-0">{children}</p>,
+                      ul: ({ children }) => <ul className="mb-4 list-disc space-y-2 pl-5 text-zinc-700">{children}</ul>,
+                      ol: ({ children }) => <ol className="mb-4 list-decimal space-y-2 pl-5 text-zinc-700">{children}</ol>,
+                      li: ({ children }) => <li className="leading-7">{children}</li>,
                       code: ({ className, children, ...props }: any) => {
                         const match = /language-(\w+)/.exec(className || '');
                         if (match) {
+                          const code = String(children).replace(/\n$/, '');
                           return (
-                            <div className="my-4 overflow-x-auto rounded-2xl border border-zinc-200 shadow-sm">
+                            <div className="my-4 overflow-hidden rounded-2xl border border-zinc-200 shadow-sm">
+                              <div className="flex items-center justify-between border-b border-zinc-800/80 bg-zinc-950 px-4 py-2 text-xs text-zinc-400">
+                                <div className="flex items-center gap-2">
+                                  <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                                  <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
+                                  <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
+                                  <span className="ml-2 uppercase tracking-[0.2em]">{match[1]}</span>
+                                </div>
+                                <button
+                                  onClick={() => navigator.clipboard.writeText(code)}
+                                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-zinc-200 transition hover:bg-white/10"
+                                  title="复制代码"
+                                >
+                                  <Copy size={13} />
+                                  复制
+                                </button>
+                              </div>
                               <SyntaxHighlighter
                                 language={match[1]}
                                 style={atomDark}
-                                customStyle={{ margin: 0, padding: '1.25rem', fontSize: '0.875rem', lineHeight: '1.6', borderRadius: '1rem' }}
+                                customStyle={{ margin: 0, padding: '1rem 1.1rem', fontSize: '0.875rem', lineHeight: '1.7', borderRadius: 0 }}
                               >
-                                {String(children).replace(/\n$/, '')}
+                                {code}
                               </SyntaxHighlighter>
                             </div>
                           );
                         }
 
                         return (
-                          <code className="rounded bg-zinc-200/70 px-1.5 py-0.5 text-[0.95em] text-zinc-800" {...props}>
+                          <code className="rounded-lg border border-zinc-200 bg-zinc-100 px-1.5 py-0.5 font-mono text-[0.92em] text-zinc-800" {...props}>
                             {children}
                           </code>
                         );
@@ -1881,7 +2204,7 @@ export default function App() {
                 </div>
               </motion.div>
             ) : (
-              <div className="flex h-full min-h-[420px] flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-12 text-center lg:h-full">
+              <div className="flex h-full min-h-[420px] flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-300 bg-zinc-50 p-12 text-center lg:h-full">
                 <BookOpen size={48} className="mb-4 text-zinc-300" />
                 <h3 className="text-xl font-semibold text-zinc-400">请先从左侧选择一个文档</h3>
                 <p className="mt-2 text-zinc-400">点击文档查看对应的完整内容。</p>
@@ -2074,7 +2397,7 @@ export default function App() {
 
         {shouldShowTopNav && (
           <nav className="sticky top-0 z-50 shrink-0 border-b border-zinc-200 bg-white/80 backdrop-blur-md">
-            <div data-layout="content-shell" className="mx-auto flex h-16 w-full max-w-[1400px] items-center justify-between px-4 md:px-6 lg:mx-0 lg:ml-6 lg:mr-auto xl:ml-8">
+            <div data-layout="content-shell" className="mx-auto flex h-16 w-full max-w-[1400px] items-center justify-between px-4 md:px-6 lg:mx-0 lg:ml-4 lg:mr-auto xl:ml-6">
               <div className="flex cursor-pointer items-center gap-2 text-xl font-bold" onClick={() => setActiveTab(getDefaultTab(mainCategory))}>
                 <div className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-lg text-white transition-colors",

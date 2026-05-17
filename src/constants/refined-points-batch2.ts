@@ -410,7 +410,7 @@ Redis 是缓存系统，不是强事务数据库，持久化能力要结合业�
   },
   {
     id: 'redis-refined-4',
-    question: 'Redis 的过期策略 and 淘汰机制是什么？',
+    question: 'Redis 的过期策略与淘汰机制是什么？',
     answer: `### 过期策略
 1. 惰性删除
    - 访问 key 时再检查是否过期

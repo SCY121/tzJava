@@ -21,4 +21,6 @@ npm run build
 4. 服务器执行 `nginx -t` 和 `nginx -s reload`。
 5. 用本机和公网地址分别做 `curl -I` 校验。
 
+更具体的静态站点发布路径、备份目录和排错说明见 [`.lingma/agents/deploy.md`](.lingma/agents/deploy.md)。
+
 仓库内不保存服务器密码、私钥、令牌或真实部署凭据。

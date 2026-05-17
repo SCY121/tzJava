@@ -1369,7 +1369,7 @@ Spring 用了三级缓存思路：
   },
   {
     id: 'spring-refined-10',
-    question: 'Spring 事务传播机制有哪些？面试里重点说哪几个？',
+    question: 'Spring 事务传播机制有哪些？面试里常说哪几个？',
     answer: `### 常见传播行为
 1. REQUIRED
    - 默认值

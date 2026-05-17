@@ -37,6 +37,8 @@ test('面试区保持左侧列表加右侧单题详情模式，并移除模块�
   assert.match(appSource, /selectedInterview \? \(/);
   assert.doesNotMatch(appSource, /const interviewTitle =/);
   assert.doesNotMatch(appSource, /const interviewSubtitle =/);
+  assert.doesNotMatch(appSource, /point\.importance === 'high'/);
+  assert.doesNotMatch(appSource, /selectedInterview\.importance === 'high'/);
 });
 
 test('算法区保持单题切换模式，并移除顶部大标题文案', () => {
@@ -55,9 +57,24 @@ test('算法区保持单题切换模式，并移除顶部大标题文案', () =>
 
 test('核心文档区改为左侧点选加右侧单篇详情，而不是整页文档流', () => {
   assert.match(appSource, /const \[selectedDocIndex, setSelectedDocIndex\] = useState\(0\);/);
-  assert.match(appSource, /const selectedDoc = currentDocs\[selectedDocIndex\] \?\? null;/);
+  assert.match(appSource, /const selectedDoc = filteredDocs\[selectedDocIndex\] \?\? null;/);
   assert.match(appSource, /key=\{selectedDoc\.title\}/);
+  assert.match(appSource, /filteredDocs/);
+  assert.match(appSource, /placeholder="搜索文档\.\.\."/);
+  assert.match(appSource, /selectedDoc\.content/);
   assert.doesNotMatch(appSource, /href=\{`#doc-\$\{i\}`\}/);
+});
+
+test('Linux 和 Docker 命令区应按类别分组，并使用结构化详情卡片', () => {
+  assert.match(appSource, /const groupedCommands = useMemo/);
+  assert.match(appSource, /data-command-category=/);
+  assert.match(appSource, /常用参数/);
+  assert.match(appSource, /使用场景/);
+  assert.match(appSource, /placeholder="搜索命令\.\.\."/);
+  assert.match(appSource, /collapsedCommandGroups/);
+  assert.match(appSource, /<span className="mr-3 select-none text-zinc-500">\$<\/span>/);
+  assert.match(appSource, /<Copy size=\{14\} \/>/);
+  assert.match(appSource, /selectedCommand\.explanation/);
 });
 
 test('命令、面试、算法、文档都应使用固定工作区，避免整页滚动', () => {
@@ -190,6 +207,27 @@ test('答案格式化应把有序项下的说明归并为同一个列表，避�
   assert.match(formatted, /1\. 饿汉式\n   - 类加载时就创建实例\n   - 简单直接，线程安全/);
   assert.match(formatted, /2\. 懒汉式\n   - 第一次使用时再创建\n   - 需要处理线程安全问题/);
   assert.match(formatted, /3\. 双重检查锁（DCL）\n   - 先判空，再加锁，再判空/);
+});
+
+test('答案格式化应移除八股里的重点标注，统一成中性表达', () => {
+  const input = `### 面试回答重点
+1. 先讲结论
+2. 再讲原理
+
+### 面试重点说哪几个
+1. REQUIRED
+2. REQUIRES_NEW
+
+答题重点：
+- 先说默认行为`;
+
+  const formatted = formatInterviewAnswer(input);
+
+  assert.doesNotMatch(formatted, /面试回答重点/);
+  assert.doesNotMatch(formatted, /面试重点说哪几个/);
+  assert.doesNotMatch(formatted, /答题重点/);
+  assert.match(formatted, /### 回答建议/);
+  assert.match(formatted, /回答建议：/);
 });
 
 test('移动端应使用横向模块导航、有限高列表和详情自动定位', () => {
