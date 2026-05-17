@@ -8,7 +8,6 @@ export const GIT_COMMANDS: Command[] = [
     category: 'repo',
     example: 'git init',
     explanation: '在当前目录创建一个新的 Git 仓库。常见于新项目初始化，或者把现有目录纳入版本管理。',
-    isCommon: true,
   },
   {
     id: 'git-clone',
@@ -26,7 +25,6 @@ export const GIT_COMMANDS: Command[] = [
     category: 'repo',
     example: 'git remote -v',
     explanation: '`-v` 会显示远端仓库地址。常用于确认当前仓库关联的是哪个 origin，以及 push/pull 的目标是否正确。',
-    isCommon: true,
   },
   {
     id: 'git-status',
@@ -62,7 +60,6 @@ export const GIT_COMMANDS: Command[] = [
     category: 'sync',
     example: 'git fetch origin',
     explanation: '只更新远端引用，不会自动合并到当前分支。适合先看远端变化，再决定是 merge 还是 rebase。',
-    isCommon: true,
   },
   {
     id: 'git-pull',
@@ -89,7 +86,6 @@ export const GIT_COMMANDS: Command[] = [
     category: 'branch',
     example: 'git branch -a',
     explanation: '`-a` 查看本地和远端分支。面试中常用于确认当前在哪个分支，以及远端是否已经存在目标分支。',
-    isCommon: true,
   },
   {
     id: 'git-checkout',
@@ -98,7 +94,6 @@ export const GIT_COMMANDS: Command[] = [
     category: 'branch',
     example: 'git checkout -b feature/login',
     explanation: '老命令，既能切分支，也能恢复文件。现在更推荐 `git switch` 和 `git restore`，但面试里仍常会碰到。',
-    isCommon: true,
   },
   {
     id: 'git-switch',
@@ -107,7 +102,6 @@ export const GIT_COMMANDS: Command[] = [
     category: 'branch',
     example: 'git switch -c feature/login',
     explanation: '新版本 Git 推荐的分支切换命令，职责更单一，语义更清晰。`-c` 表示创建并切换到新分支。',
-    isCommon: true,
   },
   {
     id: 'git-merge',
@@ -116,7 +110,6 @@ export const GIT_COMMANDS: Command[] = [
     category: 'merge',
     example: 'git merge feature/login',
     explanation: '把一个分支的提交合并到当前分支。面试里要讲清楚快进合并、非快进合并和冲突处理。',
-    isCommon: true,
   },
   {
     id: 'git-rebase',
@@ -125,7 +118,6 @@ export const GIT_COMMANDS: Command[] = [
     category: 'merge',
     example: 'git rebase origin/main',
     explanation: '把当前分支的提交“挪”到新的基底上。更适合在合并前整理本地提交，但公共分支上乱用会带来风险。',
-    isCommon: true,
   },
   {
     id: 'git-cherry-pick',
@@ -142,7 +134,6 @@ export const GIT_COMMANDS: Command[] = [
     category: 'history',
     example: 'git log --oneline --graph --decorate',
     explanation: '用于看提交链路、分支关系和作者信息。面试里常和 `--oneline`、`--graph` 一起出现，方便快速读历史。',
-    isCommon: true,
   },
   {
     id: 'git-diff',
@@ -151,7 +142,6 @@ export const GIT_COMMANDS: Command[] = [
     category: 'history',
     example: 'git diff --staged',
     explanation: '`git diff` 看未暂存改动，`--staged` 看暂存区和最新提交的差异。提交前通常都会检查一遍。',
-    isCommon: true,
   },
   {
     id: 'git-show',
@@ -168,7 +158,6 @@ export const GIT_COMMANDS: Command[] = [
     category: 'rollback',
     example: 'git reset --soft HEAD~1',
     explanation: '常见三种模式：`--soft` 只回退提交，保留改动；`--mixed` 取消暂存；`--hard` 直接回到指定版本，最危险。',
-    isCommon: true,
   },
   {
     id: 'git-revert',
@@ -177,7 +166,6 @@ export const GIT_COMMANDS: Command[] = [
     category: 'rollback',
     example: 'git revert HEAD',
     explanation: '和 `reset` 不同，它不会改写历史，而是生成一个新的反向提交。线上已经推送的提交通常更适合用它回滚。',
-    isCommon: true,
   },
   {
     id: 'git-stash',
@@ -186,7 +174,6 @@ export const GIT_COMMANDS: Command[] = [
     category: 'stash',
     example: 'git stash push -m "wip"',
     explanation: '把当前工作区改动先收起来，等切完分支或处理完紧急任务再恢复。面试里常问它和切分支的配合场景。',
-    isCommon: true,
   },
   {
     id: 'git-tag',
@@ -195,7 +182,6 @@ export const GIT_COMMANDS: Command[] = [
     category: 'release',
     example: 'git tag v1.0.0 && git push origin v1.0.0',
     explanation: '适合版本发布和回溯。企业里常把 tag 作为一次正式上线的版本标记。',
-    isCommon: true,
   },
 ];
 

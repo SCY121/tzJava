@@ -360,8 +360,8 @@ function buildCommandNotes(explanation: string) {
 }
 
 export default function App() {
-  const [mainCategory, setMainCategory] = useState<MainCategory>('linux');
-  const [activeTab, setActiveTab] = useState<TabType>(getDefaultTab('linux'));
+  const [mainCategory, setMainCategory] = useState<MainCategory>('java');
+  const [activeTab, setActiveTab] = useState<TabType>(getDefaultTab('java'));
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCommand, setSelectedCommand] = useState<Command | null>(null);
   const [selectedInterview, setSelectedInterview] = useState<InterviewPoint | null>(null);
