@@ -12,6 +12,10 @@ const networkSource = fs.readFileSync(
   path.join(process.cwd(), 'src', 'constants', 'network-points.ts'),
   'utf8'
 );
+const gitSource = fs.readFileSync(
+  path.join(process.cwd(), 'src', 'constants', 'git-commands.ts'),
+  'utf8'
+);
 const refinedBatch1Source = fs.readFileSync(
   path.join(process.cwd(), 'src', 'constants', 'refined-points-batch1.ts'),
   'utf8'
@@ -135,6 +139,15 @@ test('系统化补强题库和 Linux\/Docker 补充文档应接入站点', () =>
   assert.match(appSource, /DOCKER_COMMAND_SUPPLEMENTS/);
   assert.match(appSource, /LINUX_DOC_SUPPLEMENTS/);
   assert.match(appSource, /DOCKER_DOC_SUPPLEMENTS/);
+});
+
+test('Git 模块只提供命令和核心文档，并标记常用命令', () => {
+  assert.match(appSource, /GIT_COMMANDS/);
+  assert.match(appSource, /GIT_DOCS/);
+  assert.match(gitSource, /id: 'git-init'/);
+  assert.match(gitSource, /isCommon: true/);
+  assert.match(gitSource, /Git 面试高频总览与答题思路/);
+  assert.match(gitSource, /模拟企业开发时的 Git 使用流程/);
 });
 
 test('计网模块应在靠前位置包含 HTTPS 加密过程完整说明', () => {

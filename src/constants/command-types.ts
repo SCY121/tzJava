@@ -6,6 +6,7 @@ export interface Command {
   category: string;
   example: string;
   explanation: string;
+  isCommon?: boolean;
 }
 
 export interface InterviewPoint {

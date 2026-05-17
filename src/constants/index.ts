@@ -1,6 +1,7 @@
 // 常量模块统一导出
 export * from './command-types';
 export * from './docker-commands';
+export * from './git-commands';
 export * from './linux-commands';
 export * from './java-points';
 export * from './jvm-points';

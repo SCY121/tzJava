@@ -5,6 +5,7 @@ import {
   BookOpen,
   Search,
   ChevronRight,
+  GitBranch,
   Layers,
   Container,
   HardDrive,
@@ -28,6 +29,8 @@ import { formatInterviewAnswer } from './utils/interview-format';
 import {
   DOCKER_COMMANDS,
   DOCKER_DOCS,
+  GIT_COMMANDS,
+  GIT_DOCS,
   JAVA_POINTS,
   LINUX_COMMANDS,
   LINUX_DOCS,
@@ -106,6 +109,8 @@ function getCategoryLabel(category: MainCategory) {
   switch (category) {
     case 'linux':
       return 'Linux';
+    case 'git':
+      return 'Git';
     case 'docker':
       return 'Docker';
     case 'java':
@@ -172,11 +177,11 @@ function getInterviewTitle(category: MainCategory) {
   }
 }
 
-type MainCategory = 'linux' | 'docker' | 'java' | 'jvm' | 'juc' | 'mysql' | 'redis' | 'spring' | 'network' | 'os' | 'mq' | 'distributed' | 'design' | 'algo' | 'ai' | 'sql';
+type MainCategory = 'linux' | 'git' | 'docker' | 'java' | 'jvm' | 'juc' | 'mysql' | 'redis' | 'spring' | 'network' | 'os' | 'mq' | 'distributed' | 'design' | 'algo' | 'ai' | 'sql';
 type TabType = 'commands' | 'docs' | 'interview' | 'algorithms';
 
 function getDefaultTab(category: MainCategory): TabType {
-  if (category === 'linux' || category === 'docker') {
+  if (category === 'linux' || category === 'git' || category === 'docker') {
     return 'commands';
   }
   if (category === 'algo') {
@@ -288,6 +293,17 @@ const COMMAND_CATEGORY_META = {
     monitor: { label: '监控排障', hint: '日志、资源与运行状态' },
     cleanup: { label: '清理回收', hint: '无用镜像、容器与缓存' },
   },
+  git: {
+    repo: { label: '仓库初始化', hint: '克隆、初始化与远端关联' },
+    status: { label: '暂存提交', hint: '状态、暂存区与提交' },
+    sync: { label: '远端同步', hint: 'fetch、pull、push' },
+    branch: { label: '分支管理', hint: '查看、创建与切换分支' },
+    merge: { label: '合并整理', hint: 'merge、rebase 与挑提交' },
+    history: { label: '历史差异', hint: 'log、diff 与单次提交详情' },
+    rollback: { label: '回滚恢复', hint: 'reset、revert 与撤回' },
+    stash: { label: '临时保存', hint: '切分支前的改动收纳' },
+    release: { label: '版本发布', hint: 'tag 与版本标记' },
+  },
 } as const;
 
 function getCommandCategoryMeta(category: string, mainCategory: MainCategory) {
@@ -302,6 +318,13 @@ function getCommandCategoryMeta(category: string, mainCategory: MainCategory) {
     return COMMAND_CATEGORY_META.docker[category as keyof typeof COMMAND_CATEGORY_META.docker] ?? {
       label: '命令分类',
       hint: '常用容器命令',
+    };
+  }
+
+  if (mainCategory === 'git') {
+    return COMMAND_CATEGORY_META.git[category as keyof typeof COMMAND_CATEGORY_META.git] ?? {
+      label: '命令分类',
+      hint: '常用 Git 命令',
     };
   }
 
@@ -365,6 +388,8 @@ export default function App() {
   const currentCommandsRaw =
     mainCategory === 'linux'
       ? dedupeCommands([...LINUX_COMMANDS, ...LINUX_COMMAND_SUPPLEMENTS])
+      : mainCategory === 'git'
+        ? dedupeCommands([...GIT_COMMANDS])
       : mainCategory === 'docker'
         ? dedupeCommands([...DOCKER_COMMANDS, ...DOCKER_COMMAND_SUPPLEMENTS])
         : [];
@@ -376,6 +401,8 @@ export default function App() {
   const currentDocs =
     mainCategory === 'linux'
       ? dedupeDocs([...LINUX_REFINED_DOCS, ...LINUX_DOCS, ...LINUX_DOC_SUPPLEMENTS])
+      : mainCategory === 'git'
+        ? dedupeDocs([...GIT_DOCS])
       : mainCategory === 'docker'
         ? dedupeDocs([...DOCKER_REFINED_DOCS, ...DOCKER_DOCS, ...DOCKER_DOC_SUPPLEMENTS])
         : [];
@@ -482,13 +509,13 @@ export default function App() {
   }, [searchQuery]);
 
   const visibleTabs = [
-    { id: 'commands', label: '命令手册', icon: Terminal, show: mainCategory === 'linux' || mainCategory === 'docker' },
-    { id: 'interview', label: '面试精讲', icon: BookOpen, show: mainCategory !== 'linux' && mainCategory !== 'docker' && mainCategory !== 'algo' },
+    { id: 'commands', label: '命令手册', icon: Terminal, show: mainCategory === 'linux' || mainCategory === 'git' || mainCategory === 'docker' },
+    { id: 'interview', label: '面试精讲', icon: BookOpen, show: mainCategory !== 'linux' && mainCategory !== 'git' && mainCategory !== 'docker' && mainCategory !== 'algo' },
     { id: 'algorithms', label: '算法复盘', icon: Code2, show: mainCategory === 'algo' },
-    { id: 'docs', label: '核心文档', icon: BookOpen, show: mainCategory === 'linux' || mainCategory === 'docker' },
+    { id: 'docs', label: '核心文档', icon: BookOpen, show: mainCategory === 'linux' || mainCategory === 'git' || mainCategory === 'docker' },
   ].filter((item) => item.show);
   const shouldShowTabSwitcher = visibleTabs.length > 1;
-  const shouldShowTopNav = mainCategory === 'linux' || mainCategory === 'docker';
+  const shouldShowTopNav = mainCategory === 'linux' || mainCategory === 'git' || mainCategory === 'docker';
 
   const scrollContainerToTop = (ref: React.RefObject<HTMLDivElement | null>) => {
     ref.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1163,7 +1190,11 @@ export default function App() {
                 </div>
                 <span className={cn(
                   'rounded-full border px-3 py-1 text-xs font-semibold',
-                  mainCategory === 'linux' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-blue-200 bg-blue-50 text-blue-700'
+                  mainCategory === 'linux'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : mainCategory === 'git'
+                      ? 'border-orange-200 bg-orange-50 text-orange-700'
+                      : 'border-blue-200 bg-blue-50 text-blue-700'
                 )}>
                   {filteredCommands.length} 条
                 </span>
@@ -1228,7 +1259,9 @@ export default function App() {
                                 active
                                   ? (mainCategory === 'linux'
                                       ? 'border-emerald-200 bg-emerald-50 shadow-sm'
-                                      : 'border-blue-200 bg-blue-50 shadow-sm')
+                                      : mainCategory === 'git'
+                                        ? 'border-orange-200 bg-orange-50 shadow-sm'
+                                        : 'border-blue-200 bg-blue-50 shadow-sm')
                                   : 'border-zinc-100 bg-white hover:border-zinc-300 hover:bg-zinc-50'
                               )}
                             >
@@ -1236,7 +1269,11 @@ export default function App() {
                                 <div className="min-w-0 flex-1">
                                   <div className={cn(
                                     'truncate font-mono text-[15px] font-bold',
-                                    mainCategory === 'linux' ? 'text-emerald-700' : 'text-blue-700'
+                                    mainCategory === 'linux'
+                                      ? 'text-emerald-700'
+                                      : mainCategory === 'git'
+                                        ? 'text-orange-700'
+                                        : 'text-blue-700'
                                   )}>
                                     {cmd.command}
                                   </div>
@@ -1244,10 +1281,19 @@ export default function App() {
                                   <div className="mt-3 flex flex-wrap gap-2">
                                     <span className={cn(
                                       'rounded-full px-2.5 py-1 text-[11px] font-semibold',
-                                      mainCategory === 'linux' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+                                      mainCategory === 'linux'
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : mainCategory === 'git'
+                                          ? 'bg-orange-100 text-orange-700'
+                                          : 'bg-blue-100 text-blue-700'
                                     )}>
                                       {meta.label}
                                     </span>
+                                    {cmd.isCommon && (
+                                      <span className="rounded-full border border-zinc-200 bg-zinc-900 px-2.5 py-1 text-[11px] font-semibold text-white">
+                                        常用
+                                      </span>
+                                    )}
                                     {flags.slice(0, 2).map((flag) => (
                                       <span key={flag} className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 font-mono text-[11px] text-zinc-600">
                                         {flag}
@@ -1260,7 +1306,11 @@ export default function App() {
                                   className={cn(
                                     'mt-1 shrink-0 transition-transform',
                                     active
-                                      ? (mainCategory === 'linux' ? 'translate-x-1 text-emerald-500' : 'translate-x-1 text-blue-500')
+                                      ? (mainCategory === 'linux'
+                                          ? 'translate-x-1 text-emerald-500'
+                                          : mainCategory === 'git'
+                                            ? 'translate-x-1 text-orange-500'
+                                            : 'translate-x-1 text-blue-500')
                                       : 'text-zinc-300 group-hover:text-zinc-400'
                                   )}
                                 />
@@ -1296,17 +1346,30 @@ export default function App() {
                     <div className="space-y-6">
                       <div className={cn(
                         'overflow-hidden rounded-3xl border p-5 sm:p-6',
-                        mainCategory === 'linux' ? 'border-emerald-100 bg-emerald-50/70' : 'border-blue-100 bg-blue-50/70'
+                        mainCategory === 'linux'
+                          ? 'border-emerald-100 bg-emerald-50/70'
+                          : mainCategory === 'git'
+                            ? 'border-orange-100 bg-orange-50/70'
+                            : 'border-blue-100 bg-blue-50/70'
                       )}>
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                           <div className="min-w-0">
                             <div className="mb-3 flex flex-wrap items-center gap-2">
                               <span className={cn(
                                 'rounded-full px-3 py-1 text-xs font-semibold',
-                                mainCategory === 'linux' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+                                mainCategory === 'linux'
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : mainCategory === 'git'
+                                    ? 'bg-orange-100 text-orange-700'
+                                    : 'bg-blue-100 text-blue-700'
                               )}>
                                 {meta.label}
                               </span>
+                              {selectedCommand.isCommon && (
+                                <span className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-semibold text-white">
+                                  常用
+                                </span>
+                              )}
                               <span className="rounded-full border border-white/80 bg-white/80 px-3 py-1 text-xs text-zinc-500">
                                 {meta.hint}
                               </span>
@@ -1315,7 +1378,7 @@ export default function App() {
                             <p className="mt-3 text-base leading-7 text-zinc-700 sm:text-lg">{selectedCommand.description}</p>
                           </div>
                           <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 text-sm text-zinc-500 shadow-sm">
-                            Linux / Docker 命令速查
+                            {mainCategory === 'git' ? 'Git 命令速查' : 'Linux / Docker 命令速查'}
                           </div>
                         </div>
                       </div>
@@ -1358,7 +1421,9 @@ export default function App() {
                                     'rounded-xl border px-3 py-2 font-mono text-sm shadow-sm',
                                     mainCategory === 'linux'
                                       ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                                      : 'border-blue-200 bg-blue-50 text-blue-800'
+                                      : mainCategory === 'git'
+                                        ? 'border-orange-200 bg-orange-50 text-orange-800'
+                                        : 'border-blue-200 bg-blue-50 text-blue-800'
                                   )}
                                 >
                                   {flag}
@@ -1416,7 +1481,17 @@ export default function App() {
                           <ul className="space-y-3">
                             {notes.map((note) => (
                               <li key={note} className="flex items-start gap-3 text-sm leading-7 text-zinc-600">
-                                <CheckCircle2 size={16} className={cn('mt-1 shrink-0', mainCategory === 'linux' ? 'text-emerald-500' : 'text-blue-500')} />
+                                <CheckCircle2
+                                  size={16}
+                                  className={cn(
+                                    'mt-1 shrink-0',
+                                    mainCategory === 'linux'
+                                      ? 'text-emerald-500'
+                                      : mainCategory === 'git'
+                                        ? 'text-orange-500'
+                                        : 'text-blue-500'
+                                  )}
+                                />
                                 <span>{note}</span>
                               </li>
                             ))}
@@ -2051,11 +2126,17 @@ export default function App() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-400">文档目录</h3>
-                  <p className="mt-1 text-xs text-zinc-500">围绕 Linux / Docker 的命令和场景文档。</p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {mainCategory === 'git' ? '围绕 Git 的命令和企业协作文档。' : '围绕 Linux / Docker 的命令和场景文档。'}
+                  </p>
                 </div>
                 <span className={cn(
                   'rounded-full border px-3 py-1 text-xs font-semibold',
-                  mainCategory === 'linux' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-blue-200 bg-blue-50 text-blue-700'
+                  mainCategory === 'linux'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : mainCategory === 'git'
+                      ? 'border-orange-200 bg-orange-50 text-orange-700'
+                      : 'border-blue-200 bg-blue-50 text-blue-700'
                 )}>
                   {filteredDocs.length} 篇
                 </span>
@@ -2084,7 +2165,9 @@ export default function App() {
                     selectedDocIndex === index
                       ? mainCategory === 'linux'
                         ? 'border-emerald-200 bg-emerald-50 shadow-sm'
-                        : 'border-blue-200 bg-blue-50 shadow-sm'
+                        : mainCategory === 'git'
+                          ? 'border-orange-200 bg-orange-50 shadow-sm'
+                          : 'border-blue-200 bg-blue-50 shadow-sm'
                       : 'border-zinc-100 bg-white hover:border-zinc-300 hover:bg-zinc-50'
                   )}
                 >
@@ -2095,7 +2178,9 @@ export default function App() {
                         selectedDocIndex === index
                           ? mainCategory === 'linux'
                             ? 'text-emerald-600'
-                            : 'text-blue-600'
+                            : mainCategory === 'git'
+                              ? 'text-orange-600'
+                              : 'text-blue-600'
                           : 'text-zinc-700'
                       )}>
                         {doc.title}
@@ -2111,7 +2196,9 @@ export default function App() {
                         selectedDocIndex === index
                           ? mainCategory === 'linux'
                             ? 'translate-x-1 text-emerald-500'
-                            : 'translate-x-1 text-blue-500'
+                            : mainCategory === 'git'
+                              ? 'translate-x-1 text-orange-500'
+                              : 'translate-x-1 text-blue-500'
                           : 'text-zinc-300 group-hover:text-zinc-400'
                       )}
                     />
@@ -2137,7 +2224,11 @@ export default function App() {
                   <div
                     className={cn(
                       'rounded-xl p-3',
-                      mainCategory === 'linux' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'
+                      mainCategory === 'linux'
+                        ? 'bg-emerald-100 text-emerald-600'
+                        : mainCategory === 'git'
+                          ? 'bg-orange-100 text-orange-600'
+                          : 'bg-blue-100 text-blue-600'
                     )}
                   >
                     <BookOpen size={24} />
@@ -2145,7 +2236,9 @@ export default function App() {
                   <div className="min-w-0">
                     <h3 className="text-xl font-bold leading-snug sm:text-2xl">{selectedDoc.title}</h3>
                     <p className="mt-2 text-sm text-zinc-500">
-                      命令、场景、参数和排障思路统一排版，便于快速复盘。
+                      {mainCategory === 'git'
+                        ? '命令、流程、冲突处理和回滚方式统一排版，便于直接对照企业开发场景复盘。'
+                        : '命令、场景、参数和排障思路统一排版，便于快速复盘。'}
                     </p>
                   </div>
                 </div>
@@ -2259,8 +2352,6 @@ export default function App() {
     </motion.div>
   );
   const mainCategories = [
-    { id: 'linux', label: 'Linux', icon: Cpu, color: 'emerald' },
-    { id: 'docker', label: 'Docker', icon: Box, color: 'blue' },
     { id: 'java', label: 'Java', icon: Code2, color: 'amber' },
     { id: 'jvm', label: 'JVM', icon: Cpu, color: 'orange' },
     { id: 'juc', label: 'JUC', icon: Layers, color: 'purple' },
@@ -2272,6 +2363,9 @@ export default function App() {
     { id: 'mq', label: 'MQ', icon: Terminal, color: 'orange' },
     { id: 'distributed', label: 'Dist', icon: Layers, color: 'cyan' },
     { id: 'design', label: 'Design', icon: Layout, color: 'rose' },
+    { id: 'linux', label: 'Linux', icon: Cpu, color: 'emerald' },
+    { id: 'git', label: 'Git', icon: GitBranch, color: 'orange' },
+    { id: 'docker', label: 'Docker', icon: Box, color: 'blue' },
     { id: 'algo', label: 'Algorithm', icon: Code2, color: 'indigo' },
     { id: 'ai', label: 'AI', icon: Cpu, color: 'violet' },
     { id: 'sql', label: 'SQL', icon: Database, color: 'teal' },
@@ -2284,6 +2378,7 @@ export default function App() {
             <div className={cn(
               "flex h-11 w-11 items-center justify-center rounded-2xl text-white",
               mainCategory === 'linux' ? "bg-emerald-500" :
+              mainCategory === 'git' ? "bg-orange-500" :
               mainCategory === 'docker' ? "bg-blue-500" :
               mainCategory === 'java' ? "bg-amber-500" :
               mainCategory === 'jvm' ? "bg-orange-500" :
@@ -2300,6 +2395,7 @@ export default function App() {
               mainCategory === 'sql' ? "bg-teal-500" : "bg-indigo-500"
             )}>
               {mainCategory === 'linux' ? <Cpu size={22} /> :
+               mainCategory === 'git' ? <GitBranch size={22} /> :
                mainCategory === 'docker' ? <Box size={22} /> :
                mainCategory === 'java' ? <Code2 size={22} /> :
                mainCategory === 'jvm' ? <Cpu size={22} /> :
@@ -2401,11 +2497,11 @@ export default function App() {
               <div className="flex cursor-pointer items-center gap-2 text-xl font-bold" onClick={() => setActiveTab(getDefaultTab(mainCategory))}>
                 <div className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-lg text-white transition-colors",
-                  mainCategory === 'linux' ? "bg-emerald-500" : "bg-blue-500"
+                  mainCategory === 'linux' ? "bg-emerald-500" : mainCategory === 'git' ? "bg-orange-500" : "bg-blue-500"
                 )}>
-                  {mainCategory === 'linux' ? <Cpu size={20} /> : <Box size={20} />}
+                  {mainCategory === 'linux' ? <Cpu size={20} /> : mainCategory === 'git' ? <GitBranch size={20} /> : <Box size={20} />}
                 </div>
-                <span>添砖<span className={cn(mainCategory === 'linux' ? "text-emerald-500" : "text-blue-500")}>Java</span></span>
+                <span>添砖<span className={cn(mainCategory === 'linux' ? "text-emerald-500" : mainCategory === 'git' ? "text-orange-500" : "text-blue-500")}>Java</span></span>
               </div>
 
               {shouldShowTabSwitcher && (
@@ -2417,7 +2513,7 @@ export default function App() {
                       className={cn(
                         "flex items-center gap-2 rounded-full px-4 py-2 transition-all",
                         activeTab === item.id
-                          ? (mainCategory === 'linux' ? "bg-emerald-500 text-white shadow-md" : "bg-blue-500 text-white shadow-md")
+                          ? (mainCategory === 'linux' ? "bg-emerald-500 text-white shadow-md" : mainCategory === 'git' ? "bg-orange-500 text-white shadow-md" : "bg-blue-500 text-white shadow-md")
                           : "text-zinc-600 hover:bg-zinc-100"
                       )}
                     >
@@ -2457,7 +2553,7 @@ export default function App() {
                         className={cn(
                           "flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all",
                           activeTab === item.id
-                            ? (mainCategory === 'linux' ? "bg-emerald-50 text-emerald-600 font-bold" : "bg-blue-50 text-blue-600 font-bold")
+                            ? (mainCategory === 'linux' ? "bg-emerald-50 text-emerald-600 font-bold" : mainCategory === 'git' ? "bg-orange-50 text-orange-600 font-bold" : "bg-blue-50 text-blue-600 font-bold")
                             : "text-zinc-600 hover:bg-zinc-50"
                         )}
                       >
