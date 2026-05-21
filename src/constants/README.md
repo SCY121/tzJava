@@ -75,7 +75,7 @@ import { MYSQL_POINTS } from '@/constants/mysql-points';
 
 以下模块由于数据量较大，暂时保留在原始 `constants.ts` 文件中：
 
-- `ALGORITHM_POINTS` - 算法题库（50 道题）
+- `ALGORITHM_POINTS` - 算法题库（CodeTop 100）
 - `HOT_100_POINTS` - LeetCode Hot 100（100 道题）
 
 如需使用，直接从原文件导入：

@@ -25,5 +25,5 @@ export * from './refined-points-batch1';
 export * from './refined-points-batch2';
 export * from './refined-points-batch3';
 
-export { ALGORITHM_POINTS } from './constants';
+export { ALGORITHM_POINTS } from './codetop-points';
 export { HOT_100_POINTS } from './hot100-points';

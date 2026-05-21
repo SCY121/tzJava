@@ -1795,7 +1795,7 @@ export default function App() {
                   onClick={() => setAlgoType('codetop')}
                   className={cn('rounded-lg px-3 py-1 text-sm font-medium transition-all', algoType === 'codetop' ? 'bg-indigo-100 text-indigo-600' : 'text-zinc-400 hover:text-zinc-600')}
                 >
-                  CodeTop 50
+                  CodeTop 100
                 </button>
                 <button
                   onClick={() => setAlgoType('hot100')}

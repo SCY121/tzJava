@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { formatInterviewAnswer } from '../src/utils/interview-format';
+import { ALGORITHM_POINTS } from '../src/constants';
 
 const appSource = fs.readFileSync(
   path.join(process.cwd(), 'src', 'App.tsx'),
@@ -57,6 +58,11 @@ test('算法区保持单题切换模式，并移除顶部大标题文案', () =>
   assert.match(appSource, /selectedAlgorithmTemplate \? \(/);
   assert.match(appSource, /selectedAlgorithm \? \(/);
   assert.doesNotMatch(appSource, /<h2 className="text-3xl font-bold">LeetCode 高频算法<\/h2>/);
+});
+
+test('CodeTop 题库应扩充到 100 题，前端文案同步为 CodeTop 100', () => {
+  assert.equal(ALGORITHM_POINTS.length, 100);
+  assert.match(appSource, /CodeTop 100/);
 });
 
 test('核心文档区改为左侧点选加右侧单篇详情，而不是整页文档流', () => {
