@@ -97,6 +97,7 @@ import {
 } from './constants';
 import { getAlgorithmAcmCode } from './utils/algorithm-acm';
 import { getAlgorithmAcmLiteCode } from './utils/algorithm-acm-lite';
+import { getAlgorithmPythonCode } from './utils/algorithm-python';
 import { TerminalSimulator } from './components/TerminalSimulator';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -371,7 +372,7 @@ export default function App() {
   const [collapsedCommandGroups, setCollapsedCommandGroups] = useState<Record<string, boolean>>({});
   const [algoType, setAlgoType] = useState<'codetop' | 'hot100'>('codetop');
   const [algorithmSection, setAlgorithmSection] = useState<'problems' | 'templates'>('problems');
-  const [algorithmCodeMode, setAlgorithmCodeMode] = useState<'core' | 'acm' | 'acm-lite'>('core');
+  const [algorithmCodeMode, setAlgorithmCodeMode] = useState<'core' | 'acm' | 'acm-lite' | 'python'>('core');
   const [aiView, setAiView] = useState<'basic' | 'core' | 'engineering'>('basic');
   const [sqlView, setSqlView] = useState<'leetcode50' | 'operations' | 'guide'>('leetcode50');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -1763,7 +1764,9 @@ export default function App() {
         ? 'Java 核心代码'
         : algorithmCodeMode === 'acm'
           ? 'Java ACM 模式'
-          : 'Java ACM 简写模式';
+          : algorithmCodeMode === 'acm-lite'
+            ? 'Java ACM 简写模式'
+            : 'Python 核心代码';
     const codeModeHint =
       algorithmCodeMode === 'acm'
         ? '适合完整笔试输入输出，保留 main、读入和结果打印。'
@@ -1819,8 +1822,8 @@ export default function App() {
         </div>
 
         <div data-layout="focus-workspace" className="grid gap-8 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <div className="lg:col-span-1 lg:h-full lg:min-h-0">
-            <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+          <div className="min-w-0 lg:col-span-1 lg:h-full lg:min-h-0">
+            <div className="min-w-0 space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm lg:flex lg:h-full lg:min-h-0 lg:flex-col">
               <h3 className="px-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">
                 {algorithmSection === 'templates' ? '模板目录' : '题目目录'}
               </h3>
@@ -1942,7 +1945,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="lg:h-full lg:min-h-0">
+          <div className="min-w-0 lg:h-full lg:min-h-0">
             <AnimatePresence mode="wait">
               {algorithmSection === 'templates' ? (
                 selectedAlgorithmTemplate ? (
@@ -1952,7 +1955,7 @@ export default function App() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="scroll-mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
+                    className="min-w-0 scroll-mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
                   >
                     <div className="mb-6 flex flex-wrap items-center gap-3">
                       <div className="rounded-xl bg-indigo-100 p-3 text-indigo-600">
@@ -2009,7 +2012,7 @@ export default function App() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="scroll-mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
+                  className="min-w-0 scroll-mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-8 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
                 >
                   <div className="mb-6 flex flex-wrap items-center gap-3">
                     <div className="rounded-xl bg-indigo-100 p-3 text-indigo-600">
@@ -2065,7 +2068,7 @@ export default function App() {
                         <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">
                           <Terminal size={14} className="text-indigo-500" /> {codeModeTitle}
                         </h4>
-                        <div className="grid grid-cols-3 rounded-xl border border-zinc-200 bg-zinc-50 p-1 sm:inline-flex">
+                        <div className="grid grid-cols-2 rounded-xl border border-zinc-200 bg-zinc-50 p-1 sm:inline-flex">
                           <button
                             onClick={() => setAlgorithmCodeMode('core')}
                             className={cn('rounded-lg px-2 py-1.5 text-xs font-medium transition-colors sm:px-3 sm:text-sm', algorithmCodeMode === 'core' ? 'bg-white text-indigo-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700')}
@@ -2084,12 +2087,18 @@ export default function App() {
                           >
                             ACM简写
                           </button>
+                          <button
+                            onClick={() => setAlgorithmCodeMode('python')}
+                            className={cn('rounded-lg px-2 py-1.5 text-xs font-medium transition-colors sm:px-3 sm:text-sm', algorithmCodeMode === 'python' ? 'bg-white text-indigo-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700')}
+                          >
+                            Python版本
+                          </button>
                         </div>
                       </div>
                       {codeModeHint && <p className="mb-4 text-sm text-zinc-500">{codeModeHint}</p>}
                       <div className="overflow-x-auto rounded-2xl border border-zinc-200 shadow-sm">
                         <SyntaxHighlighter
-                          language="java"
+                          language={algorithmCodeMode === 'python' ? 'python' : 'java'}
                           style={atomDark}
                           customStyle={{ margin: 0, minWidth: 'max-content', padding: '1rem', fontSize: '0.8rem', lineHeight: '1.5', borderRadius: '1rem' }}
                         >
@@ -2097,7 +2106,9 @@ export default function App() {
                             ? selectedAlgorithm.code
                             : algorithmCodeMode === 'acm'
                               ? getAlgorithmAcmCode(selectedAlgorithm)
-                              : getAlgorithmAcmLiteCode(selectedAlgorithm)}
+                              : algorithmCodeMode === 'acm-lite'
+                                ? getAlgorithmAcmLiteCode(selectedAlgorithm)
+                                : getAlgorithmPythonCode(selectedAlgorithm)}
                         </SyntaxHighlighter>
                       </div>
                     </section>

@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { formatInterviewAnswer } from '../src/utils/interview-format';
-import { ALGORITHM_POINTS } from '../src/constants';
+import { ALGORITHM_POINTS, HOT_100_POINTS } from '../src/constants';
+import { getAlgorithmPythonCode, hasAlgorithmPythonCode } from '../src/utils/algorithm-python';
 
 const appSource = fs.readFileSync(
   path.join(process.cwd(), 'src', 'App.tsx'),
@@ -261,9 +262,21 @@ test('移动端应使用横向模块导航、有限高列表和详情自动定�
 });
 
 test('算法移动端控件与代码块应避免撑破屏幕', () => {
-  assert.match(appSource, /grid grid-cols-3 rounded-xl border border-zinc-200 bg-zinc-50 p-1 sm:inline-flex/);
+  assert.match(appSource, /grid grid-cols-2 rounded-xl border border-zinc-200 bg-zinc-50 p-1 sm:inline-flex/);
   assert.match(appSource, /overflow-x-auto rounded-2xl border border-zinc-200 shadow-sm/);
   assert.match(appSource, /minWidth: 'max-content'/);
   assert.match(appSource, /fontSize: '0\.8rem'/);
   assert.match(appSource, /scrollDetailIntoView\(algorithmDetailRef\)/);
+});
+
+test('CodeTop 和 Hot 100 应提供 Python 版本核心代码', () => {
+  const allProblems = [...ALGORITHM_POINTS, ...HOT_100_POINTS];
+
+  assert.equal(allProblems.length, 200);
+  assert.ok(allProblems.every(hasAlgorithmPythonCode));
+  assert.ok(allProblems.every((point) => getAlgorithmPythonCode(point).trim().length > 0));
+  assert.match(appSource, /setAlgorithmCodeMode\('python'\)/);
+  assert.match(appSource, /Python版本/);
+  assert.match(appSource, /language=\{algorithmCodeMode === 'python' \? 'python' : 'java'\}/);
+  assert.match(appSource, /getAlgorithmPythonCode\(selectedAlgorithm\)/);
 });
